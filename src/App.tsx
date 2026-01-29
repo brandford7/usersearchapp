@@ -1,30 +1,76 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
-import axios from "axios"; // <--- 1. Import Axios
+import axios from "axios";
 import type { Person, SearchFilters } from "./types";
 import SearchForm from "./components/UI/SearchForm";
 import Pagination from "./components/Pagination";
 import ResultsTable from "./components/UI/ResultsTable";
 
-// Components
+// --- HELPERS FOR URL PERSISTENCE ---
 
-// --- AXIOS API FUNCTION ---
+// 1. Read URL Params on Load
+const getInitialStateFromURL = (): {
+  filters: SearchFilters;
+  page: number;
+} | null => {
+  if (typeof window === "undefined") return null;
+
+  const params = new URLSearchParams(window.location.search);
+
+  // Check if we actually have search params
+  if (!params.toString()) return null;
+
+  return {
+    filters: {
+      firstName: params.get("firstName") || "",
+      middleName: params.get("middleName") || "",
+      lastName: params.get("lastName") || "",
+      zip: params.get("zip") || "",
+      city: params.get("city") || "",
+      state: params.get("state") || "",
+      dob: params.get("dob") || "",
+      email: params.get("email") || "",
+      phone: params.get("phone") || "",
+    },
+    page: parseInt(params.get("page") || "1", 10),
+  };
+};
+
+// 2. Write to URL (without reloading)
+const updateURL = (filters: SearchFilters | null, page: number) => {
+  if (!filters) {
+    window.history.pushState({}, "", window.location.pathname);
+    return;
+  }
+
+  const params = new URLSearchParams();
+  // Only add fields that have values to keep URL clean
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.append(key, value);
+  });
+  params.set("page", page.toString());
+
+  const newUrl = `${window.location.pathname}?${params.toString()}`;
+  window.history.pushState({ path: newUrl }, "", newUrl);
+};
+
+// --- API FUNCTION ---
 const fetchResults = async (
   filters: SearchFilters | null,
   page = 1,
 ): Promise<Person[]> => {
   if (!filters) return [];
 
-  // 1. Prepare Params
   const params = new URLSearchParams();
 
+  // Backend Mapping
   if (filters.firstName) params.append("firstname", filters.firstName);
   if (filters.middleName) params.append("middlename", filters.middleName);
   if (filters.lastName) params.append("lastname", filters.lastName);
-  if (filters.zip) params.append("zip", filters.zip);
+  if (filters.state) params.append("st", filters.state); // 'st' for backend
   if (filters.city) params.append("city", filters.city);
-  if (filters.state) params.append("state", filters.state);
+  if (filters.zip) params.append("zip", filters.zip);
   if (filters.dob) params.append("dob", filters.dob);
   if (filters.email) params.append("email", filters.email);
   if (filters.phone) params.append("phone", filters.phone);
@@ -32,29 +78,14 @@ const fetchResults = async (
   params.append("page", page.toString());
   params.append("limit", "100");
 
-  // 2. Make Request with Axios
-  // Note: Axios throws an error automatically if status is not 200-299
   const response = await axios.get(
     "https://usersearchapp.onrender.com/people/search",
-    {
-      params: params,
-    },
+    { params: params },
   );
 
-  console.log("Axios Response:", response.data); // Debugging
-
-  // 3. Unwrap Data (Fix for "map is not a function")
-  // Axios puts the server body inside `response.data`.
-  // If your server ALSO returns an object like { data: [...] }, we need to go one level deeper.
   const serverBody = response.data;
-
-  if (Array.isArray(serverBody)) {
-    return serverBody;
-  } else if (serverBody.data && Array.isArray(serverBody.data)) {
-    return serverBody.data;
-  } else if (serverBody.items && Array.isArray(serverBody.items)) {
-    return serverBody.items;
-  }
+  if (Array.isArray(serverBody)) return serverBody;
+  if (serverBody.data && Array.isArray(serverBody.data)) return serverBody.data;
 
   return [];
 };
@@ -72,9 +103,19 @@ export default function PeopleSearch() {
     phone: "",
   };
 
-  const [inputs, setInputs] = useState<SearchFilters>(initialFormState);
-  const [searchParams, setSearchParams] = useState<SearchFilters | null>(null);
-  const [page, setPage] = useState(1);
+  // --- INITIALIZE STATE FROM URL ---
+  // This runs once when page loads to restore previous search
+  const urlState = getInitialStateFromURL();
+
+  const [inputs, setInputs] = useState<SearchFilters>(
+    urlState ? urlState.filters : initialFormState,
+  );
+
+  const [searchParams, setSearchParams] = useState<SearchFilters | null>(
+    urlState ? urlState.filters : null,
+  );
+
+  const [page, setPage] = useState(urlState ? urlState.page : 1);
 
   const { data, isLoading, error } = useQuery<Person[]>({
     queryKey: ["search", searchParams, page],
@@ -85,19 +126,45 @@ export default function PeopleSearch() {
   });
 
   // --- HANDLERS ---
+
   const handleSearch = (e: React.FormEvent) => {
-    // This line prevents the page reload / new page opening
     e.preventDefault();
 
+    // 1. Sanitize
+    // (Note: Backend handles case, but we trim for cleanliness)
+    const cleanFilters: SearchFilters = {
+      ...inputs,
+      firstName: inputs.firstName?.trim() || "",
+      lastName: inputs.lastName?.trim() || "",
+      middleName: inputs.middleName?.trim() || "",
+      city: inputs.city?.trim() || "",
+      state: inputs.state?.trim() || "",
+      zip: inputs.zip?.trim() || "",
+      dob: inputs.dob?.trim() || "",
+    };
+
     setPage(1);
-    setSearchParams(inputs);
+    setSearchParams(cleanFilters);
+
+    // 2. Persist to URL
+    updateURL(cleanFilters, 1);
   };
 
   const handleReset = () => {
     setInputs(initialFormState);
     setSearchParams(null);
     setPage(1);
+
+    // 3. Clear URL
+    updateURL(null, 1);
   };
+
+  // Optional: Sync URL if pagination changes independently
+  useEffect(() => {
+    if (searchParams) {
+      updateURL(searchParams, page);
+    }
+  }, [page, searchParams]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300 p-6 font-sans">
@@ -126,11 +193,11 @@ export default function PeopleSearch() {
         <div className="bg-gray-900 p-5 rounded-xl border border-gray-800 shadow-lg">
           <Pagination
             currentPage={page}
-            totalItems={data ? data.length : 0}
+            totalItems={data?.length || 0}
             isLoading={isLoading}
           />
 
-          <ResultsTable data={data} isLoading={isLoading} />
+          <ResultsTable data={data ?? []} isLoading={isLoading} />
         </div>
       </div>
     </div>
