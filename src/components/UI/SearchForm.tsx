@@ -3,8 +3,6 @@ import { Search, Eraser } from "lucide-react";
 import type { SearchFilters } from "@/types";
 import InputField from "./InputField";
 
-
-
 interface SearchFormProps {
   inputs: SearchFilters;
   setInputs: React.Dispatch<React.SetStateAction<SearchFilters>>;
@@ -74,23 +72,23 @@ export default function SearchForm({
           />
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 ">
           <button
             type="submit"
-            className="flex-1 bg-indigo-900 hover:bg-indigo-800 text-indigo-100 border border-indigo-700 
+            className="flex-1  text-blue-700 bg-blue-700 hover:bg-indigo-500 border border-indigo-700 
                        py-3 rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"
           >
             <Search className="w-4 h-4" />
             Search
           </button>
           <button
-            title="search button"
+            title="reset button"
             type="button"
             onClick={onReset}
             className="w-12 flex items-center justify-center bg-gray-800 hover:bg-gray-700 
                        border border-gray-700 rounded-lg text-gray-400 transition-colors"
           >
-            <Eraser className="w-5 h-5" />
+            <Eraser className="w-5 h-5 text-blue-500 text-xl" />
           </button>
         </div>
       </form>
