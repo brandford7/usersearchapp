@@ -8,6 +8,9 @@ export const ResultsTable = ({
   data: Person[] | undefined;
   isLoading: boolean;
 }) => {
+  if (isLoading) {
+    <div>Loading ...</div>;
+  }
   return (
     <div className="overflow-x-auto border rounded-lg shadow-sm">
       <table className="min-w-full divide-y divide-gray-200">
