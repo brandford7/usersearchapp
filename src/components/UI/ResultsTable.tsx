@@ -1,9 +1,13 @@
-// features/results/ResultsTable.tsx
-
 import type { Person } from "@/types";
 import { CopyButton } from "./CopyButton";
 
-export const ResultsTable = ({ data }: { data: Person[] | undefined }) => {
+export const ResultsTable = ({
+  data,
+  isLoading,
+}: {
+  data: Person[] | undefined;
+  isLoading: boolean;
+}) => {
   return (
     <div className="overflow-x-auto border rounded-lg shadow-sm">
       <table className="min-w-full divide-y divide-gray-200">
