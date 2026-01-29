@@ -20,20 +20,21 @@ export const ResultsTable = ({
               First Name
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Last Name
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Middle Name
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              SSN
+              Last Name
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              DOB
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Address
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              DOB
+              SSN
             </th>
+
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
@@ -49,22 +50,21 @@ export const ResultsTable = ({
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {person.lastname}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {person.middlename}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {person.ssn}
+                {person.lastname}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {person.dob}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {person.address},{person.city}, {person.st}, {person.zip}
               </td>
-              
-             
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {person.dob}
+                {person.ssn}
               </td>
+
               {/* ACTION COLUMN */}
               <td className="px-6 py-4 whitespace-nowrap">
                 <CopyButton data={person} />
