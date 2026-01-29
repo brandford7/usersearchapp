@@ -5,7 +5,7 @@ import axios from "axios"; // <--- 1. Import Axios
 import type { Person, SearchFilters } from "./types";
 import SearchForm from "./components/UI/SearchForm";
 import Pagination from "./components/Pagination";
-import ResultsTable from "./components/UI/ResultsTable";
+import { ResultsTable } from "./components/UI/ResultsTable";
 
 // Components
 
