@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // components/ui/CopyButton.tsx
 import { useState } from "react";
-import { Clipboard, Check } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 
 interface CopyButtonProps {
   data: any; // The full row object
@@ -44,7 +44,7 @@ export const CopyButton = ({ data }: CopyButtonProps) => {
       {copied ? (
         <Check className="h-5 w-5 text-green-600" />
       ) : (
-        <Clipboard className="h-5 w-5" />
+        <Copy className="h-5 w-5" />
       )}
     </button>
   );

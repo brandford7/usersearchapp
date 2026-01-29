@@ -29,7 +29,10 @@ export const ResultsTable = ({
               SSN
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Location
+              Address
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              DOB
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
@@ -55,7 +58,12 @@ export const ResultsTable = ({
                 {person.ssn}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {person.city}, {person.st} {person.zip}
+                {person.address},{person.city}, {person.st}, {person.zip}
+              </td>
+              
+             
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {person.dob}
               </td>
               {/* ACTION COLUMN */}
               <td className="px-6 py-4 whitespace-nowrap">

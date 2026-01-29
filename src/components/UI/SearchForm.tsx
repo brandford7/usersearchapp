@@ -41,9 +41,9 @@ export default function SearchForm({
             onChange={(v) => handleChange("lastName", v)}
           />
           <InputField
-            label="ZIP"
-            value={inputs.zip}
-            onChange={(v) => handleChange("zip", v)}
+            label="DOB"
+            value={inputs.dob}
+            onChange={(v) => handleChange("dob", v)}
           />
           <InputField
             label="City"
@@ -56,10 +56,11 @@ export default function SearchForm({
             onChange={(v) => handleChange("state", v)}
           />
           <InputField
-            label="DOB"
-            value={inputs.dob}
-            onChange={(v) => handleChange("dob", v)}
+            label="ZIP"
+            value={inputs.zip}
+            onChange={(v) => handleChange("zip", v)}
           />
+
           <InputField
             label="Email"
             value={inputs.email}
