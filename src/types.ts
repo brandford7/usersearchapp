@@ -11,6 +11,14 @@ export interface Person {
   ssn: string;
 }
 
+//Defines the structure of your API response
+export interface ApiResponse {
+  data: Person[];
+  totalPages: number;
+  total: number;
+  itemsPerPage: number;
+}
+
 export interface SearchFilters {
   firstName: string;
   middleName: string;
