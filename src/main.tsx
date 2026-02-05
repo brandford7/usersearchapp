@@ -29,11 +29,16 @@ if (!rootElement) {
 
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            {/* Add route with username parameter */}
+            <Route
+              path="/:username/temporary-login"
+              element={<TemporaryLogin />}
+            />
             <Route path="/temporary-login" element={<TemporaryLogin />} />
             <Route
               path="/search"
@@ -46,7 +51,7 @@ ReactDOM.createRoot(rootElement).render(
             <Route path="/" element={<Navigate to="/search" replace />} />
           </Routes>
         </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 );
