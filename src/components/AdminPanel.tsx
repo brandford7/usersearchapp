@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { UserPlus, Copy, Clock, CheckCircle } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "https://usersearchapp.onrender.com/api/auth";
+const API_URL = import.meta.env.VITE_API_URL
 
 export default function AdminPanel() {
   const { isAdmin, token } = useAuth();
