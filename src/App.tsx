@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
 import axios from "axios";
 import type { SearchFilters } from "./types";
 import SearchForm from "./components/UI/SearchForm";
