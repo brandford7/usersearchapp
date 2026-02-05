@@ -1,9 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import App from "./App";
+//import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import "./index.css";
+import { BrowserRouter, Routes, Navigate, Route } from "react-router";
+import PeopleSearch from "./App";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
+import Login from "./pages/Login";
+import TemporaryLogin from "./pages/TemporaryLogin";
 
 // Configure React Query
 const queryClient = new QueryClient({
@@ -25,8 +30,23 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
-      <ReactQueryDevtools initialIsOpen={false} />
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/temporary-login" element={<TemporaryLogin />} />
+            <Route
+              path="/search"
+              element={
+                <ProtectedRoute>
+                  <PeopleSearch />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/search" replace />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,
 );

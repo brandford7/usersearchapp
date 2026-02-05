@@ -3,10 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import axios from "axios";
-import type {  SearchFilters } from "./types";
+import type { SearchFilters } from "./types";
 import SearchForm from "./components/UI/SearchForm";
 import Pagination from "./components/Pagination";
 import ResultsTable from "./components/UI/ResultsTable";
+import { useAuth } from "./contexts/AuthContext";
+import AdminPanel from "./components/AdminPanel";
+import Header from "./components/Header";
 
 // --- HELPERS FOR URL PERSISTENCE ---
 const getInitialStateFromURL = () => {
@@ -71,6 +74,8 @@ const fetchResults = async (filters: SearchFilters | null, page = 1) => {
 };
 
 export default function PeopleSearch() {
+  const { isAdmin } = useAuth();
+
   const initialFormState: SearchFilters = {
     firstName: "",
     middleName: "",
@@ -122,10 +127,12 @@ export default function PeopleSearch() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center gap-2 text-xl font-semibold text-white">
+        {/*<div className="flex items-center gap-2 text-xl font-semibold text-white">
           <Search className="w-5 h-5 text-indigo-500" />
           <h1>Lookup SSN</h1>
-        </div>
+        </div>*/}
+<Header/>
+        {isAdmin && <AdminPanel />}
 
         <SearchForm
           inputs={inputs}
