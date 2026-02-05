@@ -38,6 +38,8 @@ ReactDOM.createRoot(rootElement).render(
               path="/:username/temporary-login"
               element={<TemporaryLogin />}
             />
+            <Route path="/temporary-login" element={<TemporaryLogin />} />
+
             <Route
               path="/search"
               element={
