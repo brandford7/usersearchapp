@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { UserPlus, Copy, Clock, CheckCircle } from "lucide-react";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = "https://usersearchapp.onrender.com/api/auth";
 
 export default function AdminPanel() {
   const { isAdmin, token } = useAuth();
@@ -42,7 +42,7 @@ export default function AdminPanel() {
       // Build URL on frontend instead of using backend's loginUrl
       const temporaryToken = response.data.token;
       const frontendUrl = window.location.origin;
-      const loginUrl = `${frontendUrl}/temporary-login?token=${temporaryToken}`;
+      const loginUrl = `${frontendUrl}/${username}/temporary-login?token=${temporaryToken}`;
 
       setGeneratedLink(loginUrl);
       setUsername(""); // Clear form
