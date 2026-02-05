@@ -1,5 +1,5 @@
 // src/pages/TemporaryLogin.tsx
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, useParams } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 import { Clock, User } from 'lucide-react';
