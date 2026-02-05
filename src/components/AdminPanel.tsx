@@ -42,7 +42,7 @@ export default function AdminPanel() {
       // Build URL on frontend instead of using backend's loginUrl
       const temporaryToken = response.data.token;
       const frontendUrl = window.location.origin;
-      const loginUrl = `${frontendUrl}/${username}/temporary-login?token=${temporaryToken}`;
+      const loginUrl = `${frontendUrl}/temporary-login?token=${temporaryToken}`;
 
       setGeneratedLink(loginUrl);
       setUsername(""); // Clear form

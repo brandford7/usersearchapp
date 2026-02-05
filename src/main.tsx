@@ -34,12 +34,7 @@ ReactDOM.createRoot(rootElement).render(
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/:username/temporary-login"
-              element={<TemporaryLogin />}
-            />
             <Route path="/temporary-login" element={<TemporaryLogin />} />
-
             <Route
               path="/search"
               element={
