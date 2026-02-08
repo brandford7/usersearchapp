@@ -63,7 +63,7 @@ export default function Login() {
         <div className="bg-gray-900/80 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-gray-800 shadow-2xl">
           {error && (
             <div className="mb-6 p-3 sm:p-4 bg-red-900/30 border border-red-800 text-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
               <span className="text-xs sm:text-sm">{error}</span>
             </div>
           )}
@@ -105,7 +105,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 sm:py-4 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50"
+              className="w-full py-3 sm:py-4 text-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
