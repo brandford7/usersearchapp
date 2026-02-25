@@ -5,7 +5,7 @@ import { Copy, Clock, CheckCircle, Key } from "lucide-react";
 import api from "../api/axios";
 
 export default function AdminPanel() {
-  const { isAdmin, token } = useAuth();
+  const { isAdmin } = useAuth();
   const [username, setUsername] = useState("");
   const [expiresInHours, setExpiresInHours] = useState(24);
   const [generatedToken, setGeneratedToken] = useState("");
