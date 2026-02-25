@@ -35,7 +35,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_AUTH_URL = "/api/auth";
+const API_AUTH_URL = "/auth";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
