@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("🔐 Login attempt");
 
     try {
-      const response = await api.post(`${API_AUTH_URL}/admin/login`, {
+      const response = await api.post(`/auth/admin/login`, {
         username,
         password,
       });
@@ -155,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("🎫 Temporary login attempt with token");
 
     try {
-      const response = await api.post(`${API_AUTH_URL}/temporary/login`, {
+      const response = await api.post(`auth/temporary/login`, {
         token: tempToken,
       });
 

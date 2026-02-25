@@ -1,73 +1,66 @@
 // src/pages/TemporaryLogin.tsx
-import { useEffect, useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import {
-  Clock,
-  User,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import  { useEffect, useState, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Clock, User, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 
 export default function TemporaryLogin() {
   const [searchParams] = useSearchParams();
   const { username } = useParams();
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [usageInfo, setUsageInfo] = useState<any>(null);
   const { loginWithToken } = useAuth();
   const navigate = useNavigate();
+  
+  // CRITICAL FIX: Prevent double execution
+  const hasAttemptedLogin = useRef(false);
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    // Prevent double execution in development (React StrictMode)
+    if (hasAttemptedLogin.current) {
+      return;
+    }
+
+    const token = searchParams.get('token');
 
     if (!token) {
-      setError("No token provided in the URL");
+      setError('No token provided in the URL');
       setLoading(false);
       return;
     }
 
     const login = async () => {
+      // Mark as attempted
+      hasAttemptedLogin.current = true;
+      
       try {
-        console.log("Attempting temporary login with token");
+        console.log('🎫 Attempting temporary login with token');
         const response = await loginWithToken(token);
-        console.log("Login successful!", response);
-
-        // Store usage info if available
+        console.log('✅ Login successful!', response);
+        
         if (response?.usageInfo) {
           setUsageInfo(response.usageInfo);
         }
-
+        
         setSuccess(true);
-
+        
         // Redirect after showing success message
         setTimeout(() => {
-          navigate("/search");
+          navigate('/search');
         }, 2000);
       } catch (err: any) {
-        console.error("Temporary login error:", err);
-
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Invalid or expired token";
-
-        // Provide specific error messages
-        if (errorMessage.includes("already been used")) {
-          setError(
-            "This link has reached its maximum number of uses (2). Please request a new access link from your administrator.",
-          );
-        } else if (errorMessage.includes("expired")) {
-          setError(
-            "This link has expired. Please request a new access link from your administrator.",
-          );
-        } else if (errorMessage.includes("Invalid token")) {
-          setError(
-            "Invalid access link. Please check the URL or request a new link.",
-          );
+        console.error('❌ Temporary login error:', err);
+        
+        const errorMessage = err.response?.data?.message || err.message || 'Invalid or expired token';
+        
+        if (errorMessage.includes('already been used')) {
+          setError('This link has reached its maximum number of uses (2). Please request a new access link from your administrator.');
+        } else if (errorMessage.includes('expired')) {
+          setError('This link has expired. Please request a new access link from your administrator.');
+        } else if (errorMessage.includes('Invalid token')) {
+          setError('Invalid access link. Please check the URL or request a new link.');
         } else {
           setError(errorMessage);
         }
@@ -77,10 +70,10 @@ export default function TemporaryLogin() {
     };
 
     login();
-  }, [searchParams, loginWithToken, navigate]);
+  }, []); // Empty dependency array - only run once
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full bg-linear-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
         <div className="bg-gray-900/80 backdrop-blur-sm p-6 sm:p-8 lg:p-10 rounded-2xl border border-gray-800 shadow-2xl text-center">
           {loading ? (
@@ -102,13 +95,10 @@ export default function TemporaryLogin() {
               <p className="text-sm sm:text-base text-gray-400">
                 Please wait while we verify your credentials...
               </p>
-
+              
               <div className="mt-6 sm:mt-8">
                 <div className="w-full bg-gray-800 rounded-full h-2">
-                  <div
-                    className="bg-indigo-600 h-2 rounded-full animate-pulse"
-                    style={{ width: "60%" }}
-                  ></div>
+                  <div className="bg-indigo-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
                 </div>
               </div>
             </>
@@ -128,8 +118,7 @@ export default function TemporaryLogin() {
                   </span>
                 </div>
               )}
-
-              {/* Show usage info */}
+              
               {usageInfo && usageInfo.remainingUsages > 0 && (
                 <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-800 rounded-lg">
                   <div className="flex items-center justify-center gap-2 mb-2">
@@ -143,7 +132,7 @@ export default function TemporaryLogin() {
                   </p>
                 </div>
               )}
-
+              
               {usageInfo && usageInfo.remainingUsages === 0 && (
                 <div className="mb-4 p-3 bg-orange-900/20 border border-orange-800 rounded-lg">
                   <p className="text-sm text-orange-200">
@@ -151,7 +140,7 @@ export default function TemporaryLogin() {
                   </p>
                 </div>
               )}
-
+              
               <p className="text-sm sm:text-base text-gray-400">
                 Redirecting you to the dashboard...
               </p>
@@ -165,7 +154,9 @@ export default function TemporaryLogin() {
                 Access Denied
               </h1>
               <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 mb-6">
-                <p className="text-sm sm:text-base text-red-200">{error}</p>
+                <p className="text-sm sm:text-base text-red-200">
+                  {error}
+                </p>
               </div>
               <div className="space-y-3">
                 <a
