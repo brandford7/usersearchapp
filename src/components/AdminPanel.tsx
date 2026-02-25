@@ -1,16 +1,14 @@
 // src/components/AdminPanel.tsx
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { UserPlus, Copy, Clock, CheckCircle } from "lucide-react";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { Copy, Clock, CheckCircle, Key } from "lucide-react";
+import api from "../api/axios";
 
 export default function AdminPanel() {
   const { isAdmin, token } = useAuth();
   const [username, setUsername] = useState("");
   const [expiresInHours, setExpiresInHours] = useState(24);
-  const [generatedLink, setGeneratedLink] = useState("");
+  const [generatedToken, setGeneratedToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -22,30 +20,20 @@ export default function AdminPanel() {
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setGeneratedLink("");
+    setGeneratedToken("");
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        `${API_URL}/temporary/generate`,
-        {
-          username,
-          expiresInHours: parseInt(expiresInHours.toString()),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const response = await api.post("/auth/temporary/generate", {
+        username,
+        expiresInHours: parseInt(expiresInHours.toString()),
+      });
 
-      // Build URL on frontend instead of using backend's loginUrl
-      const temporaryToken = response.data.token;
-      const frontendUrl = window.location.origin;
-      const loginUrl = `${frontendUrl}/${username}/temporary-login?token=${temporaryToken}`;
+      // Just get the token - no URL building
+      const accessToken = response.data.token;
 
-      setGeneratedLink(loginUrl);
-      setUsername(""); // Clear form
+      setGeneratedToken(accessToken);
+      setUsername("");
     } catch (err: any) {
       console.error("Generate error:", err);
       setError(
@@ -57,7 +45,7 @@ export default function AdminPanel() {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(generatedLink);
+    navigator.clipboard.writeText(generatedToken);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -65,9 +53,9 @@ export default function AdminPanel() {
   return (
     <div className="bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-800 shadow-lg mb-6">
       <div className="flex items-center gap-2 mb-4 sm:mb-6">
-        <UserPlus className="w-5 h-5 text-indigo-500 shrink-0" />
+        <Key className="w-5 h-5 text-indigo-500 shrink-0" />
         <h2 className="text-base sm:text-lg font-semibold text-white">
-          Generate Temporary Access
+          Generate Access Token
         </h2>
       </div>
 
@@ -78,6 +66,7 @@ export default function AdminPanel() {
       )}
 
       <form onSubmit={handleGenerate} className="space-y-4">
+        {/* Inputs Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
@@ -111,76 +100,82 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 sm:py-3 text-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-        >
-          <Clock className="w-4 h-4 shrink-0" />
-          <span>
-            {loading ? "Generating..." : "Generate Temporary Access Link"}
-          </span>
-        </button>
-      </form>
+        {/* Button & Generated Token Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start pt-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <Clock className="w-4 h-4 shrink-0" />
+            <span>{loading ? "Generating..." : "Generate Access Token"}</span>
+          </button>
 
-      {generatedLink && (
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-900/20 border border-green-800 rounded-lg">
-          <div className="flex items-center gap-2 mb-2 sm:mb-3">
-            <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-400 shrink-0" />
-            <h3 className="font-semibold text-green-400 text-sm sm:text-base">
-              Link Generated!
-            </h3>
-          </div>
+          {generatedToken && (
+            <div className="p-3 sm:p-4 bg-green-900/20 border border-green-800 rounded-lg">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                <CheckCircle className="w-4 sm:w-5 h-4 sm:h-5 text-green-400 shrink-0" />
+                <h3 className="font-semibold text-green-400 text-sm sm:text-base">
+                  Token Generated!
+                </h3>
+              </div>
 
-          <div className="space-y-2">
-            {/* Link display - mobile friendly */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <input
-                type="text"
-                value={generatedLink}
-                readOnly
-                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded text-xs sm:text-sm text-blue-400 font-mono overflow-x-auto"
-              />
-              <button
-                onClick={handleCopy}
-                className="px-4 py-2 text-indigo-600 hover:bg-indigo-70 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap text-sm"
-              >
-                {copied ? (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copy</span>
-                  </>
-                )}
-              </button>
+              <div className="space-y-3">
+                {/* Token Display */}
+                <div className="bg-gray-950 p-3 rounded-lg border border-gray-700">
+                  <p className="text-xs text-gray-400 mb-2">Access Token:</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-sm sm:text-base text-indigo-300 font-mono break-all">
+                      {generatedToken}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={handleCopy}
+                      className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap flex-shrink-0"
+                    >
+                      {copied ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4" />
+                          <span className="text-sm">Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-gray-800/50 rounded-lg p-3 space-y-2">
+                  <p className="text-xs sm:text-sm text-gray-300 font-semibold">
+                    📋 Instructions for User:
+                  </p>
+                  <ol className="text-xs text-gray-400 space-y-1 list-decimal list-inside">
+                    <li>Go to the temporary login page</li>
+                    <li>Enter this token</li>
+                    <li>Click "Access System"</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="mt-3 space-y-1">
+                <p className="text-xs text-gray-400">
+                  ⏱️ This token will expire in {expiresInHours} hour
+                  {expiresInHours !== 1 ? "s" : ""} and can be used up to 2
+                  times.
+                </p>
+                <p className="text-xs text-yellow-400">
+                  ⚠️ Share this token securely with the user (email, message,
+                  etc.)
+                </p>
+              </div>
             </div>
-
-            {/* Test link button */}
-            <a
-              href={generatedLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-xs sm:text-sm"
-            >
-              🔗 Test Link (Open in New Tab)
-            </a>
-          </div>
-
-          <div className="mt-3 space-y-1">
-            <p className="text-xs text-gray-400 mt-3">
-              ⏱️ This link will expire in {expiresInHours} hour
-              {expiresInHours !== 1 ? "s" : ""} and can be used up to 2 times.
-            </p>
-            <p className="text-xs text-gray-400">
-              📧 Send this link to the user via email or messaging app.
-            </p>
-          </div>
+          )}
         </div>
-      )}
+      </form>
     </div>
   );
 }

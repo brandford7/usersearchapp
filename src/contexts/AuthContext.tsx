@@ -35,7 +35,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_AUTH_URL = "/auth";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -208,7 +207,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       // Call backend logout endpoint if session exists
       if (sessionId && token) {
-        await api.post(`${API_AUTH_URL}/logout`).catch((err) => {
+        await api.post(`auth/logout`).catch((err) => {
           console.warn(
             "Logout API call failed:",
             err.response?.data || err.message,

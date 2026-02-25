@@ -105,7 +105,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 sm:py-4 text-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50"
+              className="w-full py-3 sm:py-4 text-white hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

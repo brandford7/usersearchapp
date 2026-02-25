@@ -1,185 +1,167 @@
-// src/pages/TemporaryLogin.tsx
-import  { useEffect, useState, useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Clock, User, CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import React, { useState } from "react";
+import { useNavigate } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
+import { Key, Loader2, AlertCircle, Lock } from "lucide-react";
 
 export default function TemporaryLogin() {
-  const [searchParams] = useSearchParams();
-  const { username } = useParams();
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [success, setSuccess] = useState(false);
+  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [usageInfo, setUsageInfo] = useState<any>(null);
   const { loginWithToken } = useAuth();
   const navigate = useNavigate();
-  
-  // CRITICAL FIX: Prevent double execution
-  const hasAttemptedLogin = useRef(false);
 
-  useEffect(() => {
-    // Prevent double execution in development (React StrictMode)
-    if (hasAttemptedLogin.current) {
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const token = searchParams.get('token');
+    try {
+      console.log("🎫 Attempting temporary login with token");
+      const response = await loginWithToken(token.trim());
+      console.log("✅ Login successful!", response);
 
-    if (!token) {
-      setError('No token provided in the URL');
-      setLoading(false);
-      return;
-    }
-
-    const login = async () => {
-      // Mark as attempted
-      hasAttemptedLogin.current = true;
-      
-      try {
-        console.log('🎫 Attempting temporary login with token');
-        const response = await loginWithToken(token);
-        console.log('✅ Login successful!', response);
-        
-        if (response?.usageInfo) {
-          setUsageInfo(response.usageInfo);
-        }
-        
-        setSuccess(true);
-        
-        // Redirect after showing success message
-        setTimeout(() => {
-          navigate('/search');
-        }, 2000);
-      } catch (err: any) {
-        console.error('❌ Temporary login error:', err);
-        
-        const errorMessage = err.response?.data?.message || err.message || 'Invalid or expired token';
-        
-        if (errorMessage.includes('already been used')) {
-          setError('This link has reached its maximum number of uses (2). Please request a new access link from your administrator.');
-        } else if (errorMessage.includes('expired')) {
-          setError('This link has expired. Please request a new access link from your administrator.');
-        } else if (errorMessage.includes('Invalid token')) {
-          setError('Invalid access link. Please check the URL or request a new link.');
-        } else {
-          setError(errorMessage);
-        }
-      } finally {
-        setLoading(false);
+      if (response?.usageInfo) {
+        setUsageInfo(response.usageInfo);
       }
-    };
 
-    login();
-  }, []); // Empty dependency array - only run once
+      // Small delay to show success state
+      setTimeout(() => {
+        navigate("/search");
+      }, 1500);
+    } catch (err: any) {
+      console.error("❌ Temporary login error:", err);
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Invalid or expired token";
+
+      if (errorMessage.includes("already been used")) {
+        setError(
+          "This token has reached its maximum number of uses (2). Please request a new token from your administrator.",
+        );
+      } else if (errorMessage.includes("expired")) {
+        setError(
+          "This token has expired. Please request a new token from your administrator.",
+        );
+      } else if (errorMessage.includes("Invalid token")) {
+        setError(
+          "Invalid access token. Please check the token or request a new one.",
+        );
+      } else {
+        setError(errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-linear-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
-        <div className="bg-gray-900/80 backdrop-blur-sm p-6 sm:p-8 lg:p-10 rounded-2xl border border-gray-800 shadow-2xl text-center">
-          {loading ? (
-            <>
-              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-indigo-600/20 rounded-full mb-4 sm:mb-6">
-                <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-500 animate-spin" />
-              </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4">
-                Verifying Access
-              </h1>
-              {username && (
-                <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg mb-4">
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                  <span className="text-sm sm:text-base text-gray-300">
-                    {decodeURIComponent(username)}
-                  </span>
-                </div>
-              )}
-              <p className="text-sm sm:text-base text-gray-400">
-                Please wait while we verify your credentials...
-              </p>
-              
-              <div className="mt-6 sm:mt-8">
-                <div className="w-full bg-gray-800 rounded-full h-2">
-                  <div className="bg-indigo-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
-                </div>
-              </div>
-            </>
-          ) : success ? (
-            <>
-              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-green-600/20 rounded-full mb-4 sm:mb-6">
-                <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-500" />
-              </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-400 mb-3 sm:mb-4">
-                Access Granted!
-              </h1>
-              {username && (
-                <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-900/20 rounded-lg mb-4">
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                  <span className="text-sm sm:text-base text-green-300">
-                    {decodeURIComponent(username)}
-                  </span>
-                </div>
-              )}
-              
-              {usageInfo && usageInfo.remainingUsages > 0 && (
-                <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-800 rounded-lg">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-400" />
-                    <p className="text-sm text-yellow-200 font-semibold">
-                      {usageInfo.message}
-                    </p>
-                  </div>
-                  <p className="text-xs text-yellow-300">
-                    Usage: {usageInfo.usageCount}/{usageInfo.maxUsages}
-                  </p>
-                </div>
-              )}
-              
-              {usageInfo && usageInfo.remainingUsages === 0 && (
-                <div className="mb-4 p-3 bg-orange-900/20 border border-orange-800 rounded-lg">
-                  <p className="text-sm text-orange-200">
-                    ⚠️ This was your last login with this link
-                  </p>
-                </div>
-              )}
-              
-              <p className="text-sm sm:text-base text-gray-400">
-                Redirecting you to the dashboard...
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-red-600/20 rounded-full mb-4 sm:mb-6">
-                <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
-              </div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-400 mb-3 sm:mb-4">
-                Access Denied
-              </h1>
-              <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 mb-6">
-                <p className="text-sm sm:text-base text-red-200">
-                  {error}
-                </p>
-              </div>
-              <div className="space-y-3">
-                <a
-                  href="/login"
-                  className="block px-6 py-3 sm:py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50"
-                >
-                  Go to Admin Login
-                </a>
-                <p className="text-xs sm:text-sm text-gray-500">
-                  Need a new access link? Contact your administrator
-                </p>
-              </div>
-            </>
-          )}
+        
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-indigo-600 rounded-full mb-4">
+            <Key className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
+            Temporary Access
+          </h1>
+          <p className="text-sm sm:text-base text-gray-400">
+            Enter your access token to continue
+          </p>
         </div>
 
-        <div className="mt-6 sm:mt-8 text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500">
-            <Clock className="w-4 h-4" />
-            <span>Temporary access link</span>
+        {/* Login Form Card */}
+        <div className="bg-gray-900/80 backdrop-blur-sm p-6 sm:p-8 rounded-2xl border border-gray-800 shadow-2xl">
+          {error && (
+            <div className="mb-6 p-3 sm:p-4 bg-red-900/30 border border-red-800 text-red-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <span className="text-xs sm:text-sm">{error}</span>
+            </div>
+          )}
+
+          {usageInfo && (
+            <div className="mb-6 p-3 sm:p-4 bg-green-900/30 border border-green-800 text-green-200 rounded-lg">
+              <p className="text-xs sm:text-sm font-semibold mb-1">
+                ✅ Access Granted!
+              </p>
+              <p className="text-xs text-green-300">{usageInfo.message}</p>
+              <p className="text-xs text-green-400 mt-1">
+                Redirecting to dashboard...
+              </p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-300 mb-2">
+                Access Token
+              </label>
+              <input
+                type="text"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                placeholder="Enter your access token"
+                disabled={loading}
+                className="w-full px-4 py-3 sm:py-3.5 bg-gray-800/50 border border-gray-700 rounded-lg text-white text-sm sm:text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed font-mono"
+                required
+                autoFocus
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                Enter the token provided by your administrator
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !token.trim()}
+              className="w-full py-3 sm:py-4 bg-indigo-600 hover:bg-indigo-700 text-white active:bg-indigo-800 disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50 font-semibold rounded-lg transition-all duration-200 text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Verifying...</span>
+                </>
+              ) : (
+                <>
+                  <Key className="w-5 h-5" />
+                  <span>Access System</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-gray-900 text-gray-500">OR</span>
+            </div>
           </div>
+
+          {/* Admin Login Link */}
+          <div className="text-center">
+            <a
+              href="/login"
+              className="inline-flex items-center gap-2 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Login as Administrator</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 sm:mt-8 text-center space-y-2">
+          <p className="text-xs text-gray-500">
+            Need help? Contact your system administrator
+          </p>
           <p className="text-xs text-gray-600">
-            This link can be used up to 2 times before expiring
+            Tokens expire after use or time limit
           </p>
         </div>
       </div>

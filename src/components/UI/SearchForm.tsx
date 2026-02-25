@@ -76,7 +76,7 @@ export default function SearchForm({
         <div className="flex gap-3 ">
           <button
             type="submit"
-            className="flex-1  text-blue-700 bg-blue-700 hover:bg-indigo-500 border border-indigo-700 
+            className="flex-1  text-white bg-blue-700 hover:bg-indigo-500 border border-indigo-700 
                        py-3 rounded-lg font-medium flex justify-center items-center gap-2 transition-colors"
           >
             <Search className="w-4 h-4" />

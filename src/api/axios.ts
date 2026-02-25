@@ -1,4 +1,3 @@
-// src/api/axios.ts
 import axios from "axios";
 
 const api = axios.create({
@@ -27,7 +26,20 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const errorMessage = error.response?.data?.message || "";
 
-      // Clear auth data
+      // CHECK ROLE BEFORE CLEARING - This is critical!
+      const storedUser = localStorage.getItem("auth_user");
+      let isAdmin = false;
+
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          isAdmin = user.role === "admin";
+        } catch (e) {
+          console.error("Error parsing stored user:", e);
+        }
+      }
+
+      // NOW clear auth data
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
       localStorage.removeItem("session_id");
@@ -41,14 +53,16 @@ api.interceptors.response.use(
       } else if (errorMessage.includes("Session has expired")) {
         alert("Your session has expired. Please log in again.");
       } else if (errorMessage.includes("already been used")) {
-        alert("This access link has reached its maximum number of uses.");
-      } else {
-        // Generic 401 - just redirect silently
-        console.log("Session expired, redirecting to login...");
+        alert("This access token has reached its maximum number of uses.");
       }
 
-      // Redirect to login
-      window.location.href = "/login";
+      // Smart redirect based on user type
+      console.log("Redirecting user. isAdmin:", isAdmin);
+      if (isAdmin) {
+        window.location.href = "/login";
+      } else {
+        window.location.href = "/temporary-login";
+      }
     }
 
     return Promise.reject(error);

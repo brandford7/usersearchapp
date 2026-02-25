@@ -33,13 +33,13 @@ ReactDOM.createRoot(rootElement).render(
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <Routes>
+            {/* Admin login page */}
             <Route path="/login" element={<Login />} />
-            {/* Add route with username parameter */}
-            <Route
-              path="/:username/temporary-login"
-              element={<TemporaryLogin />}
-            />
+
+            {/* Temporary token entry page */}
             <Route path="/temporary-login" element={<TemporaryLogin />} />
+
+            {/* Protected search page */}
             <Route
               path="/search"
               element={
@@ -48,7 +48,12 @@ ReactDOM.createRoot(rootElement).render(
                 </ProtectedRoute>
               }
             />
-            <Route path="/" element={<Navigate to="/search" replace />} />
+
+            {/* Default redirect */}
+            <Route
+              path="/"
+              element={<Navigate to="/temporary-login" replace />}
+            />
           </Routes>
         </AuthProvider>
       </QueryClientProvider>
