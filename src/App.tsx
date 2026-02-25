@@ -9,6 +9,7 @@ import ResultsTable from "./components/UI/ResultsTable";
 import { useAuth } from "./contexts/AuthContext";
 import AdminPanel from "./components/AdminPanel";
 import Header from "./components/Header";
+import api from "./api/axios";
 
 // --- HELPERS FOR URL PERSISTENCE ---
 const getInitialStateFromURL = () => {
@@ -65,13 +66,9 @@ const fetchResults = async (filters: SearchFilters | null, page = 1) => {
   params.append("page", page.toString());
   params.append("limit", "100");
 
-  const response = await axios.get(
-    "https://usersearchapp.onrender.com/people/search",
-    { params },
-  );
+  const response = await api.get("/people/search", { params });
   return response.data;
 };
-
 export default function PeopleSearch() {
   const { isAdmin } = useAuth();
 
@@ -126,11 +123,7 @@ export default function PeopleSearch() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300 p-6 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/*<div className="flex items-center gap-2 text-xl font-semibold text-white">
-          <Search className="w-5 h-5 text-indigo-500" />
-          <h1>Lookup SSN</h1>
-        </div>*/}
-<Header/>
+        <Header />
         {isAdmin && <AdminPanel />}
 
         <SearchForm

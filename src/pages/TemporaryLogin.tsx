@@ -1,32 +1,76 @@
 // src/pages/TemporaryLogin.tsx
-import  { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, useParams } from 'react-router';
-import { useAuth } from '../contexts/AuthContext';
-import { Clock, User } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  Clock,
+  User,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 
 export default function TemporaryLogin() {
   const [searchParams] = useSearchParams();
-  const { username } = useParams(); // Extract username from URL
-  const [error, setError] = useState('');
+  const { username } = useParams();
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [success, setSuccess] = useState(false);
+  const [usageInfo, setUsageInfo] = useState<any>(null);
   const { loginWithToken } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const token = searchParams.get("token");
 
     if (!token) {
-      setError('No token provided');
+      setError("No token provided in the URL");
       setLoading(false);
       return;
     }
 
     const login = async () => {
       try {
-        await loginWithToken(token);
-        navigate('/search');
+        console.log("Attempting temporary login with token");
+        const response = await loginWithToken(token);
+        console.log("Login successful!", response);
+
+        // Store usage info if available
+        if (response?.usageInfo) {
+          setUsageInfo(response.usageInfo);
+        }
+
+        setSuccess(true);
+
+        // Redirect after showing success message
+        setTimeout(() => {
+          navigate("/search");
+        }, 2000);
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Invalid or expired token');
+        console.error("Temporary login error:", err);
+
+        const errorMessage =
+          err.response?.data?.message ||
+          err.message ||
+          "Invalid or expired token";
+
+        // Provide specific error messages
+        if (errorMessage.includes("already been used")) {
+          setError(
+            "This link has reached its maximum number of uses (2). Please request a new access link from your administrator.",
+          );
+        } else if (errorMessage.includes("expired")) {
+          setError(
+            "This link has expired. Please request a new access link from your administrator.",
+          );
+        } else if (errorMessage.includes("Invalid token")) {
+          setError(
+            "Invalid access link. Please check the URL or request a new link.",
+          );
+        } else {
+          setError(errorMessage);
+        }
       } finally {
         setLoading(false);
       }
@@ -36,33 +80,116 @@ export default function TemporaryLogin() {
   }, [searchParams, loginWithToken, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-md">
-        <div className="bg-gray-900 p-8 rounded-xl border border-gray-800 shadow-lg text-center">
+        <div className="bg-gray-900/80 backdrop-blur-sm p-6 sm:p-8 lg:p-10 rounded-2xl border border-gray-800 shadow-2xl text-center">
           {loading ? (
             <>
-              <Clock className="w-12 h-12 text-indigo-500 mx-auto mb-4 animate-spin" />
-              <h1 className="text-xl font-bold text-white mb-2">Verifying Access</h1>
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-indigo-600/20 rounded-full mb-4 sm:mb-6">
+                <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-500 animate-spin" />
+              </div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-3 sm:mb-4">
+                Verifying Access
+              </h1>
               {username && (
-                <div className="flex items-center justify-center gap-2 text-gray-400 mb-2">
-                  <User className="w-4 h-4" />
-                  <span className="text-sm">{decodeURIComponent(username)}</span>
+                <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-800/50 rounded-lg mb-4">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                  <span className="text-sm sm:text-base text-gray-300">
+                    {decodeURIComponent(username)}
+                  </span>
                 </div>
               )}
-              <p className="text-gray-400">Please wait...</p>
+              <p className="text-sm sm:text-base text-gray-400">
+                Please wait while we verify your credentials...
+              </p>
+
+              <div className="mt-6 sm:mt-8">
+                <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div
+                    className="bg-indigo-600 h-2 rounded-full animate-pulse"
+                    style={{ width: "60%" }}
+                  ></div>
+                </div>
+              </div>
             </>
-          ) : error ? (
+          ) : success ? (
             <>
-              <h1 className="text-xl font-bold text-red-400 mb-2">Access Denied</h1>
-              <p className="text-gray-400 mb-4">{error}</p>
-              
-              <a  href="/login"
-                className="inline-block px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-              >
-                Go to Login
-              </a>
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-green-600/20 rounded-full mb-4 sm:mb-6">
+                <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-500" />
+              </div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-400 mb-3 sm:mb-4">
+                Access Granted!
+              </h1>
+              {username && (
+                <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-900/20 rounded-lg mb-4">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                  <span className="text-sm sm:text-base text-green-300">
+                    {decodeURIComponent(username)}
+                  </span>
+                </div>
+              )}
+
+              {/* Show usage info */}
+              {usageInfo && usageInfo.remainingUsages > 0 && (
+                <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-800 rounded-lg">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-400" />
+                    <p className="text-sm text-yellow-200 font-semibold">
+                      {usageInfo.message}
+                    </p>
+                  </div>
+                  <p className="text-xs text-yellow-300">
+                    Usage: {usageInfo.usageCount}/{usageInfo.maxUsages}
+                  </p>
+                </div>
+              )}
+
+              {usageInfo && usageInfo.remainingUsages === 0 && (
+                <div className="mb-4 p-3 bg-orange-900/20 border border-orange-800 rounded-lg">
+                  <p className="text-sm text-orange-200">
+                    ⚠️ This was your last login with this link
+                  </p>
+                </div>
+              )}
+
+              <p className="text-sm sm:text-base text-gray-400">
+                Redirecting you to the dashboard...
+              </p>
             </>
-          ) : null}
+          ) : (
+            <>
+              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-red-600/20 rounded-full mb-4 sm:mb-6">
+                <XCircle className="w-8 h-8 sm:w-10 sm:h-10 text-red-500" />
+              </div>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-400 mb-3 sm:mb-4">
+                Access Denied
+              </h1>
+              <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 mb-6">
+                <p className="text-sm sm:text-base text-red-200">{error}</p>
+              </div>
+              <div className="space-y-3">
+                <a
+                  href="/login"
+                  className="block px-6 py-3 sm:py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-all text-sm sm:text-base shadow-lg hover:shadow-indigo-500/50"
+                >
+                  Go to Admin Login
+                </a>
+                <p className="text-xs sm:text-sm text-gray-500">
+                  Need a new access link? Contact your administrator
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mt-6 sm:mt-8 text-center space-y-2">
+          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500">
+            <Clock className="w-4 h-4" />
+            <span>Temporary access link</span>
+          </div>
+          <p className="text-xs text-gray-600">
+            This link can be used up to 2 times before expiring
+          </p>
         </div>
       </div>
     </div>

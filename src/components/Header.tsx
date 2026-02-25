@@ -1,9 +1,22 @@
-// src/components/Header.tsx
 import { useAuth } from "../contexts/AuthContext";
 import { LogOut, User, Search } from "lucide-react";
+import { useNavigate } from "react-router";
+
 
 export default function Header() {
   const { user, logout, isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Still navigate to login even if logout API fails
+      navigate("/login");
+    }
+  };
 
   return (
     <div className="flex items-center justify-between mb-6">
@@ -24,7 +37,7 @@ export default function Header() {
         </div>
 
         <button
-          onClick={logout}
+          onClick={handleLogout}
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
         >
           <LogOut className="w-4 h-4" />

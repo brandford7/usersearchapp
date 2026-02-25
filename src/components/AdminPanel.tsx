@@ -171,9 +171,10 @@ export default function AdminPanel() {
           </div>
 
           <div className="mt-3 space-y-1">
-            <p className="text-xs text-gray-400">
+            // src/components/AdminPanel.tsx - Update the success message
+            <p className="text-xs text-gray-400 mt-3">
               ⏱️ This link will expire in {expiresInHours} hour
-              {expiresInHours !== 1 ? "s" : ""} and can only be used once.
+              {expiresInHours !== 1 ? "s" : ""} and can be used up to 2 times.
             </p>
             <p className="text-xs text-gray-400">
               📧 Send this link to the user via email or messaging app.
