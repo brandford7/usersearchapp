@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { UserPlus, Copy, Clock, CheckCircle } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "https://usersearchapp.onrender.com/api/auth";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AdminPanel() {
   const { isAdmin, token } = useAuth();
@@ -171,7 +171,6 @@ export default function AdminPanel() {
           </div>
 
           <div className="mt-3 space-y-1">
-            // src/components/AdminPanel.tsx - Update the success message
             <p className="text-xs text-gray-400 mt-3">
               ⏱️ This link will expire in {expiresInHours} hour
               {expiresInHours !== 1 ? "s" : ""} and can be used up to 2 times.
