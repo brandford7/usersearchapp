@@ -147,12 +147,12 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
                       onClick={() => handleCopySSN(person.id, person.ssn)}
-                      className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 font-mono tracking-wide transition-all group cursor-pointer min-w-[140px]"
+                      className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 font-mono tracking-wide transition-all group cursor-pointer min-w-35"
                       title="Click to copy SSN"
                     >
                       {isCopied ? (
                         <div className="flex items-center gap-2 text-green-400">
-                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                          <CheckCircle className="w-4 h-4 shrink-0" />
                           <span className="text-sm font-medium">Copied!</span>
                         </div>
                       ) : (
