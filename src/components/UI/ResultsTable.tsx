@@ -26,12 +26,24 @@ const formatDob = (dob: string | null | undefined): string => {
 };
 
 export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
+  // Track which SSN was copied by person ID
   const [copiedSsnId, setCopiedSsnId] = useState<string | null>(null);
+
+  // Track which Address was copied by person ID
+  const [copiedAddressId, setCopiedAddressId] = useState<string | null>(null);
 
   const handleCopySSN = (personId: string, ssn: string) => {
     navigator.clipboard.writeText(ssn);
     setCopiedSsnId(personId);
     setTimeout(() => setCopiedSsnId(null), 2000);
+  };
+
+  const handleCopyAddress = (personId: string, person: Person) => {
+    // Format the full address for copying
+    const fullAddress = `${person.address || "N/A"}, ${person.city}, ${person.st} ${person.zip}`;
+    navigator.clipboard.writeText(fullAddress);
+    setCopiedAddressId(personId);
+    setTimeout(() => setCopiedAddressId(null), 2000);
   };
 
   if (isLoading) {
@@ -108,7 +120,8 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
           {/* Body: Alternating colors or solid dark */}
           <tbody className="divide-y divide-slate-800 bg-[#0f172a]">
             {data.map((person, index) => {
-              const isCopied = copiedSsnId === person.id;
+              const isSsnCopied = copiedSsnId === person.id;
+              const isAddressCopied = copiedAddressId === person.id;
 
               return (
                 <tr
@@ -133,14 +146,29 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
                   {/* Address Column */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-slate-200">
-                        {person.address || "N/A"}
-                      </span>
-                      <span className="text-xs text-slate-500 mt-0.5">
-                        {person.city}, {person.st} {person.zip}
-                      </span>
-                    </div>
+                    <button
+                      onClick={() => handleCopyAddress(person.id, person)}
+                      className="flex items-center gap-2 hover:text-slate-200 transition-all group cursor-pointer text-left min-w-[200px]"
+                      title="Click to copy address"
+                    >
+                      {isAddressCopied ? (
+                        <div className="flex items-center gap-2 text-green-400">
+                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-sm font-medium">Copied!</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-2 w-full">
+                          <div className="flex flex-col flex-1">
+                            <span className="text-sm font-medium text-slate-200">
+                              {person.address || "N/A"}
+                            </span>
+                            <span className="text-xs text-slate-500 mt-0.5">
+                              {person.city}, {person.st} {person.zip}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </button>
                   </td>
 
                   {/* SSN Column - Hide SSN when copied, show only checkmark */}
@@ -150,7 +178,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                       className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 font-mono tracking-wide transition-all group cursor-pointer min-w-35"
                       title="Click to copy SSN"
                     >
-                      {isCopied ? (
+                      {isSsnCopied ? (
                         <div className="flex items-center gap-2 text-green-400">
                           <CheckCircle className="w-4 h-4 shrink-0" />
                           <span className="text-sm font-medium">Copied!</span>
@@ -174,7 +202,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         </table>
       </div>
 
-      {/* Footer / Pagination info area (Optional, matches bottom of image table) */}
+      {/*Footer*/}
       <div className="bg-[#020617] px-6 py-3 border-t border-slate-800 text-xs text-slate-500">
         Showing {data.length} results
       </div>
