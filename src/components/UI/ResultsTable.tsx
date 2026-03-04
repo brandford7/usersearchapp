@@ -1,5 +1,7 @@
+import { useState } from "react";
 import type { Person } from "../../types";
 import { CopyButton } from "./CopyButton"; // Ensure this import path is correct
+import { CheckCircle } from "lucide-react";
 
 interface ResultsTableProps {
   data: Person[] | undefined;
@@ -24,7 +26,14 @@ const formatDob = (dob: string | null | undefined): string => {
 };
 
 export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
-  // 1. Loading State
+  const [copiedSsnId, setCopiedSsnId] = useState<string | null>(null);
+
+  const handleCopySSN = (personId: string, ssn: string) => {
+    navigator.clipboard.writeText(ssn);
+    setCopiedSsnId(personId);
+    setTimeout(() => setCopiedSsnId(null), 2000);
+  };
+
   if (isLoading) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center text-slate-400 bg-[#0f172a] rounded-lg border border-slate-800">
@@ -98,50 +107,69 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
           {/* Body: Alternating colors or solid dark */}
           <tbody className="divide-y divide-slate-800 bg-[#0f172a]">
-            {data.map((person, index) => (
-              <tr
-                key={`${person.id}-${index}`}
-                className="hover:bg-slate-800/50 transition-colors duration-150"
-              >
-                {/* Name Columns (Split as per image columns) */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
-                  {person.firstname}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                  {person.middlename || "-"}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
-                  {person.lastname}
-                </td>
+            {data.map((person, index) => {
+              const isCopied = copiedSsnId === person.id;
 
-                {/* DOB Column: Matches style in image (Year-Month-Day or '-') */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">
-                  {person.dob ? formatDob(person.dob) : "-"}
-                </td>
+              return (
+                <tr
+                  key={`${person.id}-${index}`}
+                  className="hover:bg-slate-800/50 transition-colors duration-150"
+                >
+                  {/* Name Columns */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
+                    {person.firstname}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                    {person.middlename || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
+                    {person.lastname}
+                  </td>
 
-                {/* Address Column: Stacked Layout (Street on top, City/State below) */}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-slate-200">
-                      {person.address || "N/A"}
-                    </span>
-                    <span className="text-xs text-slate-500 mt-0.5">
-                      {person.city}, {person.st} {person.zip}
-                    </span>
-                  </div>
-                </td>
+                  {/* DOB Column */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">
+                    {person.dob ? formatDob(person.dob) : "-"}
+                  </td>
 
-                {/* SSN Column */}
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-mono tracking-wide">
-                  {person.ssn}
-                </td>
+                  {/* Address Column */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-200">
+                        {person.address || "N/A"}
+                      </span>
+                      <span className="text-xs text-slate-500 mt-0.5">
+                        {person.city}, {person.st} {person.zip}
+                      </span>
+                    </div>
+                  </td>
 
-                {/* Actions Column */}
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <CopyButton data={person} />
-                </td>
-              </tr>
-            ))}
+                  {/* SSN Column - Hide SSN when copied, show only checkmark */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => handleCopySSN(person.id, person.ssn)}
+                      className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 font-mono tracking-wide transition-all group cursor-pointer min-w-[140px]"
+                      title="Click to copy SSN"
+                    >
+                      {isCopied ? (
+                        <div className="flex items-center gap-2 text-green-400">
+                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-sm font-medium">Copied!</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span>{person.ssn}</span>
+                        </>
+                      )}
+                    </button>
+                  </td>
+
+                  {/* Actions Column */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <CopyButton data={person} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
