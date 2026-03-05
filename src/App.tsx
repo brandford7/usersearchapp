@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -71,6 +71,16 @@ const fetchResults = async (filters: SearchFilters | null, page = 1) => {
 };
 export default function PeopleSearch() {
   const { isAdmin } = useAuth();
+
+  // Add this at the top of your component
+  useEffect(() => {
+    console.log("=== LOCALSTORAGE DEBUG ===");
+    console.log("auth_token:", localStorage.getItem("auth_token"));
+    console.log("auth_user:", localStorage.getItem("auth_user"));
+    console.log("session_id:", localStorage.getItem("session_id"));
+    console.log("auth_timestamp:", localStorage.getItem("auth_timestamp"));
+    console.log("=========================");
+  }, []);
 
   const initialFormState: SearchFilters = {
     firstName: "",

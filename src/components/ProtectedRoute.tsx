@@ -1,6 +1,5 @@
 // src/components/ProtectedRoute.tsx
 import React from "react";
-
 import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router";
 
@@ -13,22 +12,25 @@ export default function ProtectedRoute({
   children,
   requireAdmin = false,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading, getLoginPath } = useAuth();
 
-  // Show loading while checking auth state
+  // Don't redirect while loading (handled by AppRoutes)
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
+    return null;
   }
 
+  // Not authenticated - smart redirect based on last login type
   if (!isAuthenticated) {
-    return <Navigate to="/temporary-login" replace />;
+    const redirectPath = getLoginPath();
+    console.log("Not authenticated, redirecting to:", redirectPath);
+    return <Navigate to={redirectPath} replace />;
   }
 
+  // Authenticated but not admin when admin is required
   if (requireAdmin && !isAdmin) {
+    console.log(
+      "Admin required but user is not admin, redirecting to /search",
+    );
     return <Navigate to="/search" replace />;
   }
 

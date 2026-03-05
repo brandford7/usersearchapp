@@ -31,10 +31,19 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isAdmin: boolean;
   loading: boolean;
+  getLoginPath: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Storage keys
+const STORAGE_KEYS = {
+  TOKEN: "auth_token",
+  USER: "auth_user",
+  SESSION_ID: "session_id",
+  TIMESTAMP: "auth_timestamp",
+  LAST_LOGIN_TYPE: "last_login_type",
+} as const;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -45,16 +54,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   /**
-   * Clear all authentication data from state and localStorage
+   * Save auth data to localStorage with login type
+   */
+  const saveAuthData = useCallback(
+    (authToken: string, userData: User, sessionIdValue: string) => {
+      try {
+        localStorage.setItem(STORAGE_KEYS.TOKEN, authToken);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+        localStorage.setItem(STORAGE_KEYS.SESSION_ID, sessionIdValue);
+        localStorage.setItem(STORAGE_KEYS.TIMESTAMP, Date.now().toString());
+        localStorage.setItem(STORAGE_KEYS.LAST_LOGIN_TYPE, userData.role); // Store login type for smart redirects
+
+        console.log("💾 Auth data saved:", {
+          username: userData.username,
+          role: userData.role,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error("❌ Failed to save auth data:", error);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Clear auth data but preserve last login type for smart redirects
    */
   const clearAuthData = useCallback(() => {
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("auth_user");
-    localStorage.removeItem("session_id");
+    try {
+      const lastLoginType = localStorage.getItem(STORAGE_KEYS.LAST_LOGIN_TYPE);
+
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.SESSION_ID);
+      localStorage.removeItem(STORAGE_KEYS.TIMESTAMP);
+      // DON'T remove LAST_LOGIN_TYPE - we need it for smart redirects
+
+      delete api.defaults.headers.common["Authorization"];
+      console.log(
+        "🗑️ Auth data cleared, last login type preserved:",
+        lastLoginType,
+      );
+    } catch (error) {
+      console.error("❌ Failed to clear auth data:", error);
+    }
   }, []);
 
   /**
-   * Handle logout - clear state only
+   * Handle logout - clear state
    */
   const handleLogout = useCallback(() => {
     setToken(null);
@@ -64,33 +111,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [clearAuthData]);
 
   /**
+   * Get the appropriate login path based on user role
+   */
+  const getLoginPath = useCallback(() => {
+    // First check if user is currently logged in
+    if (user?.role) {
+      return user.role === "admin" ? "/login" : "/temporary-login";
+    }
+
+    // If not logged in, check last login type from localStorage
+    const lastLoginType = localStorage.getItem(STORAGE_KEYS.LAST_LOGIN_TYPE);
+    return lastLoginType === "admin" ? "/login" : "/temporary-login";
+  }, [user]);
+
+  /**
    * Restore authentication state from localStorage on mount
    */
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       try {
-        const storedToken = localStorage.getItem("auth_token");
-        const storedUser = localStorage.getItem("auth_user");
-        const storedSessionId = localStorage.getItem("session_id");
+        console.log("🔍 Checking for stored auth data...");
 
-        if (storedToken && storedUser) {
-          const parsedUser = JSON.parse(storedUser);
+        const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
+        const storedUserStr = localStorage.getItem(STORAGE_KEYS.USER);
+        const storedSessionId = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
+        const storedTimestamp = localStorage.getItem(STORAGE_KEYS.TIMESTAMP);
 
-          setToken(storedToken);
-          setUser(parsedUser);
-          setSessionId(storedSessionId);
+        console.log("📊 Storage check:", {
+          hasToken: !!storedToken,
+          hasUser: !!storedUserStr,
+          hasSessionId: !!storedSessionId,
+          timestamp: storedTimestamp,
+        });
 
-          console.log("✅ Auth restored from localStorage:", {
+        if (storedToken && storedUserStr) {
+          const parsedUser = JSON.parse(storedUserStr);
+
+          console.log("✅ Found stored auth data:", {
             username: parsedUser.username,
             role: parsedUser.role,
             hasSessionId: !!storedSessionId,
+            savedAt: storedTimestamp
+              ? new Date(parseInt(storedTimestamp)).toISOString()
+              : "unknown",
           });
+
+          // Set token in axios for verification request
+          api.defaults.headers.common["Authorization"] =
+            `Bearer ${storedToken}`;
+
+          try {
+            // Verify token is still valid
+            await api.get("/auth/profile");
+            console.log("✅ Token validated successfully");
+
+            // Token is valid, restore auth state
+            setToken(storedToken);
+            setUser(parsedUser);
+            setSessionId(storedSessionId);
+          } catch (verifyError) {
+            console.warn(
+              "⚠️ Stored token is invalid or expired, clearing auth data",
+            );
+            clearAuthData();
+          }
         } else {
           console.log("ℹ️ No stored auth data found");
         }
       } catch (error) {
         console.error("❌ Error restoring auth:", error);
-        // Clear corrupted data
         clearAuthData();
       } finally {
         setLoading(false);
@@ -104,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    * Admin login with username and password
    */
   const login = async (username: string, password: string): Promise<void> => {
-    console.log("🔐 Login attempt");
+    console.log("🔐 Admin login attempt");
 
     try {
       const response = await api.post(`/auth/admin/login`, {
@@ -129,10 +218,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(userData);
       setSessionId(newSessionId);
 
-      // Persist to localStorage
-      localStorage.setItem("auth_token", access_token);
-      localStorage.setItem("auth_user", JSON.stringify(userData));
-      localStorage.setItem("session_id", newSessionId);
+      // Persist to storage
+      saveAuthData(access_token, userData, newSessionId);
+
+      // Set axios default header
+      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
 
       console.log("✅ Login successful:", {
         username: userData.username,
@@ -146,7 +236,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   /**
    * Temporary token login
-   * Returns usage info so component can display it
    */
   const loginWithToken = async (
     tempToken: string,
@@ -154,7 +243,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     console.log("🎫 Temporary login attempt with token");
 
     try {
-      const response = await api.post(`auth/temporary/login`, {
+      const response = await api.post(`/auth/temporary/login`, {
         token: tempToken,
       });
 
@@ -176,10 +265,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(userData);
       setSessionId(newSessionId);
 
-      // Persist to localStorage
-      localStorage.setItem("auth_token", access_token);
-      localStorage.setItem("auth_user", JSON.stringify(userData));
-      localStorage.setItem("session_id", newSessionId);
+      // Persist to storage
+      saveAuthData(access_token, userData, newSessionId);
+
+      // Set axios default header
+      api.defaults.headers.common["Authorization"] = `Bearer ${access_token}`;
 
       console.log("✅ Temporary login successful:", {
         username: userData.username,
@@ -187,7 +277,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         usageInfo: usageInfo || "No usage info",
       });
 
-      // Return usage info to component
       return { usageInfo };
     } catch (error: any) {
       console.error(
@@ -202,17 +291,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    * Logout - invalidate session on backend and clear local state
    */
   const logout = async (): Promise<void> => {
-    console.log("Logging out...");
+    console.log("🚪 Logging out...");
 
     try {
-      // Call backend logout endpoint if session exists
       if (sessionId && token) {
-        await api.post(`auth/logout`).catch((err) => {
+        await api.post(`/auth/logout`).catch((err) => {
           console.warn(
-            "Logout API call failed:",
+            "⚠️ Logout API call failed:",
             err.response?.data || err.message,
           );
-          // Continue with local logout even if API call fails
         });
       }
     } finally {
@@ -233,6 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated: !!token,
         isAdmin: user?.role === "admin",
         loading,
+        getLoginPath,
       }}
     >
       {children}

@@ -1,33 +1,34 @@
-import  { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { LogOut, User, Search, Shield, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
 
 export default function Header() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, getLoginPath } = useAuth();
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    if (isLoggingOut) return; // Prevent multiple clicks
+    if (isLoggingOut) return;
 
     setIsLoggingOut(true);
 
+    // Get the appropriate login path
+    const redirectPath = getLoginPath();
+    console.log(
+      "🚪 Logging out user:",
+      user?.username,
+      "Redirecting to:",
+      redirectPath,
+    );
+
     try {
-      console.log("Logging out user:", user?.username, "Role:", user?.role);
-
       await logout();
-
-      // Redirect based on user role
-      const redirectPath = isAdmin ? "/login" : "/temporary-login";
-      console.log("Redirecting to:", redirectPath);
-
-      navigate(redirectPath);
+      console.log("✅ Logout successful, navigating to:", redirectPath);
+      navigate(redirectPath, { replace: true });
     } catch (error) {
-      console.error("Logout error:", error);
-      // Still navigate even if logout API fails
-      const redirectPath = isAdmin ? "/login" : "/temporary-login";
-      navigate(redirectPath);
+      console.error("❌ Logout error:", error);
+      navigate(redirectPath, { replace: true });
     } finally {
       setIsLoggingOut(false);
     }
@@ -42,15 +43,15 @@ export default function Header() {
 
       <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
         <div className="flex items-center gap-2 text-sm flex-1 sm:flex-initial">
-          <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <User className="w-4 h-4 text-gray-400 shrink-0" />
           <span className="text-gray-300 truncate">{user?.username}</span>
           {isAdmin ? (
-            <span className="px-2 py-1 bg-indigo-600 text-white text-xs rounded flex items-center gap-1 flex-shrink-0">
+            <span className="px-2 py-1 bg-indigo-600 text-white text-xs rounded flex items-center gap-1 shrink-0">
               <Shield className="w-3 h-3" />
               Admin
             </span>
           ) : (
-            <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded flex-shrink-0">
+            <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded shrink-0">
               Temporary
             </span>
           )}

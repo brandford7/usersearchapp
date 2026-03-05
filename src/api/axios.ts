@@ -1,3 +1,4 @@
+// src/api/axios.ts
 import axios from "axios";
 
 const api = axios.create({
@@ -5,7 +6,6 @@ const api = axios.create({
     import.meta.env.VITE_BACKEND_URL ,
 });
 
-// Add token to all requests
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("auth_token");
@@ -19,32 +19,32 @@ api.interceptors.request.use(
   },
 );
 
-// Handle 401 errors (session invalidated)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       const errorMessage = error.response?.data?.message || "";
 
-      // CHECK ROLE BEFORE CLEARING - This is critical!
-      const storedUser = localStorage.getItem("auth_user");
-      let isAdmin = false;
+      // Get redirect path based on last login type
+      const lastLoginType = localStorage.getItem("last_login_type");
+      const redirectPath =
+        lastLoginType === "admin" ? "/login" : "/temporary-login";
 
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser);
-          isAdmin = user.role === "admin";
-        } catch (e) {
-          console.error("Error parsing stored user:", e);
-        }
-      }
+      console.log(
+        "🔄 401 error - Last login type:",
+        lastLoginType,
+        "Redirecting to:",
+        redirectPath,
+      );
 
-      // NOW clear auth data
+      // Clear auth data
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
       localStorage.removeItem("session_id");
+      localStorage.removeItem("auth_timestamp");
+      // Keep last_login_type for smart redirect
 
-      // Show appropriate message based on error
+      // Show message
       if (
         errorMessage.includes("Another user has logged in") ||
         errorMessage.includes("Session is no longer valid")
@@ -56,13 +56,8 @@ api.interceptors.response.use(
         alert("This access token has reached its maximum number of uses.");
       }
 
-      // Smart redirect based on user type
-      console.log("Redirecting user. isAdmin:", isAdmin);
-      if (isAdmin) {
-        window.location.href = "/login";
-      } else {
-        window.location.href = "/temporary-login";
-      }
+      // Smart redirect
+      window.location.href = redirectPath;
     }
 
     return Promise.reject(error);
