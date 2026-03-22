@@ -79,7 +79,7 @@ export default function PeopleSearch() {
     console.log("auth_user:", localStorage.getItem("auth_user"));
     console.log("session_id:", localStorage.getItem("session_id"));
     console.log("auth_timestamp:", localStorage.getItem("auth_timestamp"));
-    console.log("=========================");
+    
   }, []);
 
   const initialFormState: SearchFilters = {
