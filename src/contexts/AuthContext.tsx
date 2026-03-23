@@ -176,10 +176,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             clearAuthData();
           }
         } else {
-          console.log("ℹ️ No stored auth data found");
+          console.log(" No stored auth data found");
         }
       } catch (error) {
-        console.error("❌ Error restoring auth:", error);
+        console.error(" Error restoring auth:", error);
         clearAuthData();
       } finally {
         setLoading(false);
@@ -193,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
    * Admin login with username and password
    */
   const login = async (username: string, password: string): Promise<void> => {
-    console.log("🔐 Admin login attempt");
+    console.log(" Admin login attempt");
 
     try {
       const response = await api.post(`/auth/admin/login`, {
@@ -201,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         password,
       });
 
-      console.log("✅ Login response received");
+      console.log(" Login response received");
 
       const {
         access_token,
