@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -74,12 +73,11 @@ export default function PeopleSearch() {
 
   // Add this at the top of your component
   useEffect(() => {
-    console.log("=== LOCALSTORAGE DEBUG ===");
+    /*console.log("=== LOCALSTORAGE DEBUG ===");
     console.log("auth_token:", localStorage.getItem("auth_token"));
     console.log("auth_user:", localStorage.getItem("auth_user"));
-    console.log("session_id:", localStorage.getItem("session_id"));
-    console.log("auth_timestamp:", localStorage.getItem("auth_timestamp"));
-    
+     console.log("session_id:", localStorage.getItem("session_id"));
+    console.log("auth_timestamp:", localStorage.getItem("auth_timestamp"));*/
   }, []);
 
   const initialFormState: SearchFilters = {

@@ -137,12 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const storedSessionId = localStorage.getItem(STORAGE_KEYS.SESSION_ID);
         const storedTimestamp = localStorage.getItem(STORAGE_KEYS.TIMESTAMP);
 
-        console.log("📊 Storage check:", {
-          hasToken: !!storedToken,
-          hasUser: !!storedUserStr,
-          hasSessionId: !!storedSessionId,
-          timestamp: storedTimestamp,
-        });
+      
 
         if (storedToken && storedUserStr) {
           const parsedUser = JSON.parse(storedUserStr);
@@ -280,7 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return { usageInfo };
     } catch (error: any) {
       console.error(
-        "❌ Temporary login failed:",
+        "Temporary login failed:",
         error.response?.data || error.message,
       );
       throw error;
