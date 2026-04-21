@@ -27,6 +27,7 @@ const getInitialStateFromURL = () => {
       dob: params.get("dob") || "",
       email: params.get("email") || "",
       phone: params.get("phone") || "",
+      ssn:params.get("ssn") || "",
     },
     page: parseInt(params.get("page") || "1", 10),
   };
@@ -90,6 +91,7 @@ export default function PeopleSearch() {
     dob: "",
     email: "",
     phone: "",
+    ssn:""
   };
 
   const urlState = getInitialStateFromURL();

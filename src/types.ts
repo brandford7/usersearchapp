@@ -29,4 +29,5 @@ export interface SearchFilters {
   dob: string;
   email: string;
   phone: string;
+  ssn: string;
 }

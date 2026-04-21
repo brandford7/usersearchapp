@@ -71,6 +71,11 @@ export default function SearchForm({
             value={inputs.phone}
             onChange={(v) => handleChange("phone", v)}
           />
+          <InputField
+            label="SSN"
+            value={inputs.ssn}
+            onChange={(v) => handleChange("ssn", v)}
+          />
         </div>
 
         <div className="flex gap-3 ">
