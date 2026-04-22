@@ -1,3 +1,4 @@
+// src/App.tsx
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -21,13 +22,13 @@ const getInitialStateFromURL = () => {
       firstName: params.get("firstName") || "",
       middleName: params.get("middleName") || "",
       lastName: params.get("lastName") || "",
-      zip: params.get("zip") || "",
+      ssn: params.get("ssn") || "",
+      dob: params.get("dob") || "",
       city: params.get("city") || "",
       state: params.get("state") || "",
-      dob: params.get("dob") || "",
+      zip: params.get("zip") || "",
       email: params.get("email") || "",
       phone: params.get("phone") || "",
-      ssn:params.get("ssn") || "",
     },
     page: parseInt(params.get("page") || "1", 10),
   };
@@ -48,7 +49,6 @@ const updateURL = (filters: SearchFilters | null, page: number) => {
 };
 
 // --- API FUNCTION ---
-// Returns the full object so metadata isn't lost
 const fetchResults = async (filters: SearchFilters | null, page = 1) => {
   if (!filters) return null;
 
@@ -56,10 +56,11 @@ const fetchResults = async (filters: SearchFilters | null, page = 1) => {
   if (filters.firstName) params.append("firstname", filters.firstName);
   if (filters.middleName) params.append("middlename", filters.middleName);
   if (filters.lastName) params.append("lastname", filters.lastName);
-  if (filters.state) params.append("st", filters.state);
-  if (filters.city) params.append("city", filters.city);
-  if (filters.zip) params.append("zip", filters.zip);
+  if (filters.ssn) params.append("ssn", filters.ssn); // Add SSN
   if (filters.dob) params.append("dob", filters.dob);
+  if (filters.city) params.append("city", filters.city);
+  if (filters.state) params.append("st", filters.state);
+  if (filters.zip) params.append("zip", filters.zip);
   if (filters.email) params.append("email", filters.email);
   if (filters.phone) params.append("phone", filters.phone);
 
@@ -69,29 +70,21 @@ const fetchResults = async (filters: SearchFilters | null, page = 1) => {
   const response = await api.get("/people/search", { params });
   return response.data;
 };
+
 export default function PeopleSearch() {
   const { isAdmin } = useAuth();
-
-  // Add this at the top of your component
-  useEffect(() => {
-    /*console.log("=== LOCALSTORAGE DEBUG ===");
-    console.log("auth_token:", localStorage.getItem("auth_token"));
-    console.log("auth_user:", localStorage.getItem("auth_user"));
-     console.log("session_id:", localStorage.getItem("session_id"));
-    console.log("auth_timestamp:", localStorage.getItem("auth_timestamp"));*/
-  }, []);
 
   const initialFormState: SearchFilters = {
     firstName: "",
     middleName: "",
     lastName: "",
-    zip: "",
+    ssn: "",
+    dob: "",
     city: "",
     state: "",
-    dob: "",
+    zip: "",
     email: "",
     phone: "",
-    ssn:""
   };
 
   const urlState = getInitialStateFromURL();
