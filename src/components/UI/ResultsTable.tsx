@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { Person } from "../../types";
 import { CopyButton } from "./CopyButton";
-import { CheckCircle, Copy, Clipboard, ClipboardList } from "lucide-react";
+import { CheckCircle, Copy,  ClipboardList } from "lucide-react";
 
 interface ResultsTableProps {
   data: Person[] | undefined;
