@@ -2,45 +2,35 @@
 import { useState } from "react";
 import type { Person } from "../../types";
 import { CopyButton } from "./CopyButton";
-import { CheckCircle, Copy, Clipboard } from "lucide-react";
+import { CheckCircle, Copy, Clipboard, ClipboardList } from "lucide-react";
 
 interface ResultsTableProps {
   data: Person[] | undefined;
   isLoading?: boolean;
 }
 
-// --- DATE FORMATTING HELPER FUNCTION ---
 const formatDob = (dob: string | null | undefined): string => {
   if (!dob) return "-";
-
-  // Case 1: "19590113" -> "1959-01-13"
   if (/^\d{8}$/.test(dob)) {
-    const year = dob.slice(0, 4);
-    const month = dob.slice(4, 6);
-    const day = dob.slice(6, 8);
-    return `${year}-${month}-${day}`;
+    return `${dob.slice(0, 4)}-${dob.slice(4, 6)}-${dob.slice(6, 8)}`;
   }
-
-  // Case 2: "1959" -> "1959" (Year only)
-  // Case 3: Already formatted dates -> return as is
   return dob;
 };
 
-// Format person data for copying
 const formatPersonForCopy = (person: Person): string => {
   return `${person.firstname || ""}\t${person.middlename || ""}\t${person.lastname || ""}\t${formatDob(person.dob)}\t${person.address || ""}, ${person.city}, ${person.st} ${person.zip}\t${person.ssn}`;
 };
 
 export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
-  // Track which SSN was copied by person ID
   const [copiedSsnId, setCopiedSsnId] = useState<string | null>(null);
-  // Track which Address was copied by person ID
   const [copiedAddressId, setCopiedAddressId] = useState<string | null>(null);
 
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  const [copiedRows, setCopiedRows] = useState(false);
+  const [copiedSSNs, setCopiedSSNs] = useState(false);
 
+  // Single row handlers
   const handleCopySSN = (personId: string, ssn: string) => {
     navigator.clipboard.writeText(ssn);
     setCopiedSsnId(personId);
@@ -48,14 +38,13 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   };
 
   const handleCopyAddress = (personId: string, person: Person) => {
-    // Format the full address for copying
     const fullAddress = `${person.address || "N/A"}, ${person.city}, ${person.st} ${person.zip}`;
     navigator.clipboard.writeText(fullAddress);
     setCopiedAddressId(personId);
     setTimeout(() => setCopiedAddressId(null), 2000);
   };
 
-  // Toggle individual row selection
+  // Multi-select handlers
   const toggleRowSelection = (personId: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(personId)) {
@@ -66,40 +55,36 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
     setSelectedIds(newSelected);
   };
 
-  // Toggle all rows selection
   const toggleSelectAll = () => {
     if (!data) return;
-
     if (selectedIds.size === data.length) {
-      // Deselect all
       setSelectedIds(new Set());
     } else {
-      // Select all
-      setSelectedIds(new Set(data.map((person) => person.id)));
+      setSelectedIds(new Set(data.map((p) => p.id)));
     }
   };
 
-  // Copy selected rows
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // Copy selected full rows (TSV for Excel/Sheets)
   const copySelectedRows = () => {
     if (!data || selectedIds.size === 0) return;
-
-    const selectedPeople = data.filter((person) => selectedIds.has(person.id));
-
-    // Create tab-separated values (TSV) format for pasting into Excel/Sheets
+    const selected = data.filter((p) => selectedIds.has(p.id));
     const header = "First Name\tMiddle Name\tLast Name\tDOB\tAddress\tSSN";
-    const rows = selectedPeople.map(formatPersonForCopy);
-    const clipboardText = [header, ...rows].join("\n");
-
-    navigator.clipboard.writeText(clipboardText);
-
-    // Show copied message
-    setShowCopiedMessage(true);
-    setTimeout(() => setShowCopiedMessage(false), 2000);
+    const rows = selected.map(formatPersonForCopy);
+    navigator.clipboard.writeText([header, ...rows].join("\n"));
+    setCopiedRows(true);
+    setTimeout(() => setCopiedRows(false), 2000);
   };
 
-  // Clear selection
-  const clearSelection = () => {
-    setSelectedIds(new Set());
+  // Copy selected SSNs only (one per line)
+  const copySelectedSSNs = () => {
+    if (!data || selectedIds.size === 0) return;
+    const selected = data.filter((p) => selectedIds.has(p.id));
+    const ssns = selected.map((p) => p.ssn).join("\n");
+    navigator.clipboard.writeText(ssns);
+    setCopiedSSNs(true);
+    setTimeout(() => setCopiedSSNs(false), 2000);
   };
 
   if (isLoading) {
@@ -111,7 +96,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
     );
   }
 
-  // Empty State
   if (!data || data.length === 0) {
     return (
       <div className="w-full h-40 flex items-center justify-center text-slate-500 bg-[#0f172a] rounded-lg border border-slate-800">
@@ -124,107 +108,116 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const someSelected = selectedIds.size > 0 && selectedIds.size < data.length;
 
   return (
-    <div className="space-y-4">
-      {/* Selection toolbar */}
+    <div className="space-y-3">
+      {/* Selection Toolbar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
+          {/* Left: Selection info */}
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-indigo-300">
               {selectedIds.size} row{selectedIds.size !== 1 ? "s" : ""} selected
             </span>
             <button
               onClick={clearSelection}
-              className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs text-slate-400 hover:text-slate-200 underline underline-offset-2 transition-colors"
             >
-              Clear selection
+              Clear
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {showCopiedMessage && (
-              <div className="flex items-center gap-2 text-green-400 text-sm mr-3">
-                <CheckCircle className="w-4 h-4" />
-                <span>Copied to clipboard!</span>
-              </div>
-            )}
+          {/* Right: Copy buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Copy SSNs only */}
+            <button
+              onClick={copySelectedSSNs}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                copiedSSNs
+                  ? "bg-green-700 text-white"
+                  : "bg-slate-700 hover:bg-slate-600 text-slate-200"
+              }`}
+            >
+              {copiedSSNs ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  SSNs Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  Copy SSNs ({selectedIds.size})
+                </>
+              )}
+            </button>
+
+            {/* Copy full rows */}
             <button
               onClick={copySelectedRows}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                copiedRows
+                  ? "bg-green-700 text-white"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
             >
-              <Clipboard className="w-4 h-4" />
-              Copy Selected Rows
+              {copiedRows ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Rows Copied!
+                </>
+              ) : (
+                <>
+                  <ClipboardList className="w-4 h-4" />
+                  Copy Full Rows ({selectedIds.size})
+                </>
+              )}
             </button>
           </div>
         </div>
       )}
 
+      {/* Table */}
       <div className="overflow-hidden rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-800">
             {/* Header */}
             <thead className="bg-[#020617]">
               <tr>
-                {/* Select All Checkbox */}
-                <th scope="col" className="px-6 py-4 w-12">
+                <th scope="col" className="px-4 py-4 w-10">
                   <input
                     type="checkbox"
                     checked={allSelected}
-                    ref={(input) => {
-                      if (input) {
-                        input.indeterminate = someSelected;
-                      }
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected;
                     }}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
+                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
                   />
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   First Name
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Middle
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Last Name
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   DOB
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
-                  Current Address
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Address
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   SSN
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                >
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
 
             {/* Body */}
-            <tbody className="divide-y divide-slate-800 bg-[#0f172a]">
+            <tbody className="divide-y divide-slate-800">
               {data.map((person, index) => {
                 const isSsnCopied = copiedSsnId === person.id;
                 const isAddressCopied = copiedAddressId === person.id;
@@ -233,42 +226,61 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                 return (
                   <tr
                     key={`${person.id}-${index}`}
-                    className={`transition-colors duration-150 ${
+                    onClick={() => toggleRowSelection(person.id)}
+                    className={`transition-colors duration-150 cursor-pointer ${
                       isSelected
-                        ? "bg-indigo-900/30 border-l-4 border-l-indigo-500"
+                        ? "bg-indigo-900/30 border-l-2 border-l-indigo-500"
                         : "hover:bg-slate-800/50"
                     }`}
                   >
                     {/* Checkbox */}
-                    <td className="px-6 py-4">
+                    <td
+                      className="px-4 py-4"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleRowSelection(person.id)}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
                       />
                     </td>
 
                     {/* Name Columns */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {person.firstname}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm text-slate-400"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {person.middlename || "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {person.lastname}
                     </td>
 
-                    {/* DOB Column */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">
-                      {person.dob ? formatDob(person.dob) : "-"}
+                    {/* DOB */}
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {formatDob(person.dob)}
                     </td>
 
-                    {/* Address Column - Clickable with Copy */}
+                    {/* Address - Click to copy */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => handleCopyAddress(person.id, person)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyAddress(person.id, person);
+                        }}
                         className="flex items-center gap-2 hover:text-slate-200 transition-all group cursor-pointer text-left min-w-[200px]"
                         title="Click to copy address"
                       >
@@ -293,11 +305,18 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                       </button>
                     </td>
 
-                    {/* SSN Column - Hide SSN when copied, show only checkmark */}
+                    {/* SSN - Click to copy */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => handleCopySSN(person.id, person.ssn)}
-                        className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 font-mono tracking-wide transition-all group cursor-pointer min-w-[140px]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopySSN(person.id, person.ssn);
+                        }}
+                        className={`flex items-center gap-2 text-sm font-mono tracking-wide transition-all group cursor-pointer min-w-[140px] ${
+                          isSelected
+                            ? "text-indigo-300"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
                         title="Click to copy SSN"
                       >
                         {isSsnCopied ? (
@@ -314,8 +333,11 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                       </button>
                     </td>
 
-                    {/* Actions Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Actions */}
+                    <td
+                      className="px-6 py-4 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <CopyButton data={person} />
                     </td>
                   </tr>
@@ -329,7 +351,9 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         <div className="bg-[#020617] px-6 py-3 border-t border-slate-800 text-xs text-slate-500 flex items-center justify-between">
           <span>Showing {data.length} results</span>
           {selectedIds.size > 0 && (
-            <span className="text-indigo-400">{selectedIds.size} selected</span>
+            <span className="text-indigo-400 font-medium">
+              {selectedIds.size} of {data.length} selected
+            </span>
           )}
         </div>
       </div>
