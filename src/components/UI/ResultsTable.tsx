@@ -2,41 +2,55 @@
 import { useState } from "react";
 import type { Person } from "../../types";
 import { CopyButton } from "./CopyButton";
-import { CheckCircle, Copy,  ClipboardList } from "lucide-react";
+import { CheckCircle, Copy, ClipboardList } from "lucide-react";
 
 interface ResultsTableProps {
   data: Person[] | undefined;
   isLoading?: boolean;
 }
 
+// Format DOB from YYYY-MM-DD to MM/DD/YYYY
 const formatDob = (dob: string | null | undefined): string => {
   if (!dob) return "-";
-  if (/^\d{8}$/.test(dob)) {
-    return `${dob.slice(0, 4)}-${dob.slice(4, 6)}-${dob.slice(6, 8)}`;
+
+  // Case: YYYY-MM-DD → MM/DD/YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+    const [year, month, day] = dob.split("-");
+    return `${month}/${day}/${year}`;
   }
+
+  // Case: YYYYMMDD → MM/DD/YYYY
+  if (/^\d{8}$/.test(dob)) {
+    const year = dob.slice(0, 4);
+    const month = dob.slice(4, 6);
+    const day = dob.slice(6, 8);
+    return `${month}/${day}/${year}`;
+  }
+
+  // Case: YYYY only
   return dob;
 };
 
+// Format: | John | Sweeney | L | 246 Pinecastle Ave | Pittsburgh | PA | 15234 | 4128847146 | 10/13/1971 | 191-64-3353 |
 const formatPersonForCopy = (person: Person): string => {
-  return `${person.firstname || ""}\t${person.middlename || ""}\t${person.lastname || ""}\t${formatDob(person.dob)}\t${person.address || ""}, ${person.city}, ${person.st} ${person.zip}\t${person.ssn}`;
+  return `| ${person.firstname || ""} | ${person.lastname || ""} | ${person.middlename || ""} | ${person.address || ""} | ${person.city || ""} | ${person.st || ""} | ${person.zip || ""} | ${person.phone || ""} | ${formatDob(person.dob)} | ${person.ssn || ""} |`;
 };
 
 export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const [copiedSsnId, setCopiedSsnId] = useState<string | null>(null);
   const [copiedAddressId, setCopiedAddressId] = useState<string | null>(null);
-
-  // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copiedRows, setCopiedRows] = useState(false);
   const [copiedSSNs, setCopiedSSNs] = useState(false);
 
-  // Single row handlers
+  // Single SSN copy
   const handleCopySSN = (personId: string, ssn: string) => {
     navigator.clipboard.writeText(ssn);
     setCopiedSsnId(personId);
     setTimeout(() => setCopiedSsnId(null), 2000);
   };
 
+  // Single address copy
   const handleCopyAddress = (personId: string, person: Person) => {
     const fullAddress = `${person.address || "N/A"}, ${person.city}, ${person.st} ${person.zip}`;
     navigator.clipboard.writeText(fullAddress);
@@ -44,7 +58,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
     setTimeout(() => setCopiedAddressId(null), 2000);
   };
 
-  // Multi-select handlers
+  // Toggle single row
   const toggleRowSelection = (personId: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(personId)) {
@@ -55,6 +69,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
     setSelectedIds(newSelected);
   };
 
+  // Toggle all rows
   const toggleSelectAll = () => {
     if (!data) return;
     if (selectedIds.size === data.length) {
@@ -66,13 +81,12 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
   const clearSelection = () => setSelectedIds(new Set());
 
-  // Copy selected full rows (TSV for Excel/Sheets)
+  // Copy selected full rows in pipe format
   const copySelectedRows = () => {
     if (!data || selectedIds.size === 0) return;
     const selected = data.filter((p) => selectedIds.has(p.id));
-    const header = "First Name\tMiddle Name\tLast Name\tDOB\tAddress\tSSN";
-    const rows = selected.map(formatPersonForCopy);
-    navigator.clipboard.writeText([header, ...rows].join("\n"));
+    const rows = selected.map(formatPersonForCopy).join("\n");
+    navigator.clipboard.writeText(rows);
     setCopiedRows(true);
     setTimeout(() => setCopiedRows(false), 2000);
   };
@@ -112,7 +126,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
       {/* Selection Toolbar */}
       {selectedIds.size > 0 && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
-          {/* Left: Selection info */}
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-indigo-300">
               {selectedIds.size} row{selectedIds.size !== 1 ? "s" : ""} selected
@@ -125,7 +138,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             </button>
           </div>
 
-          {/* Right: Copy buttons */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Copy SSNs only */}
             <button
@@ -166,7 +178,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
               ) : (
                 <>
                   <ClipboardList className="w-4 h-4" />
-                  Copy Full Rows ({selectedIds.size})
+                  Copy Rows ({selectedIds.size})
                 </>
               )}
             </button>
@@ -178,9 +190,9 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
       <div className="overflow-hidden rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-800">
-            {/* Header */}
             <thead className="bg-[#020617]">
               <tr>
+                {/* Checkbox */}
                 <th scope="col" className="px-4 py-4 w-10">
                   <input
                     type="checkbox"
@@ -192,31 +204,42 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   First Name
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Middle
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Last Name
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  DOB
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Middle
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Address
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  City
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  ST
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  ZIP
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  DOB
+                </th>
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   SSN
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
 
-            {/* Body */}
             <tbody className="divide-y divide-slate-800">
               {data.map((person, index) => {
                 const isSsnCopied = copiedSsnId === person.id;
@@ -246,42 +269,38 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                       />
                     </td>
 
-                    {/* Name Columns */}
+                    {/* First Name */}
                     <td
-                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200"
+                      className="px-4 py-4 whitespace-nowrap text-sm font-medium text-slate-200"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {person.firstname}
+                      {person.firstname || "-"}
                     </td>
+
+                    {/* Last Name */}
                     <td
-                      className="px-6 py-4 whitespace-nowrap text-sm text-slate-400"
+                      className="px-4 py-4 whitespace-nowrap text-sm font-medium text-slate-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {person.lastname || "-"}
+                    </td>
+
+                    {/* Middle Name */}
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-sm text-slate-400"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {person.middlename || "-"}
                     </td>
-                    <td
-                      className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-200"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {person.lastname}
-                    </td>
 
-                    {/* DOB */}
-                    <td
-                      className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {formatDob(person.dob)}
-                    </td>
-
-                    {/* Address - Click to copy */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* Address - click to copy */}
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCopyAddress(person.id, person);
                         }}
-                        className="flex items-center gap-2 hover:text-slate-200 transition-all group cursor-pointer text-left min-w-[200px]"
+                        className="flex items-center gap-2 hover:text-slate-200 transition-all group cursor-pointer text-left"
                         title="Click to copy address"
                       >
                         {isAddressCopied ? (
@@ -290,29 +309,64 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                             <span className="text-sm font-medium">Copied!</span>
                           </div>
                         ) : (
-                          <div className="flex items-start gap-2 w-full">
-                            <div className="flex flex-col flex-1">
-                              <span className="text-sm font-medium text-slate-200">
-                                {person.address || "N/A"}
-                              </span>
-                              <span className="text-xs text-slate-500 mt-0.5">
-                                {person.city}, {person.st} {person.zip}
-                              </span>
-                            </div>
-                            <Copy className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1 text-slate-400" />
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-200">
+                              {person.address || "N/A"}
+                            </span>
+                            <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-slate-400" />
                           </div>
                         )}
                       </button>
                     </td>
 
-                    {/* SSN - Click to copy */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* City */}
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-sm text-slate-300"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {person.city || "-"}
+                    </td>
+
+                    {/* State */}
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-sm text-slate-300"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {person.st || "-"}
+                    </td>
+
+                    {/* ZIP */}
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-sm text-slate-300 font-mono"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {person.zip || "-"}
+                    </td>
+
+                    {/* Phone */}
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-sm text-slate-300 font-mono"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {person.phone || "-"}
+                    </td>
+
+                    {/* DOB */}
+                    <td
+                      className="px-4 py-4 whitespace-nowrap text-sm text-slate-300 font-mono"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {formatDob(person.dob)}
+                    </td>
+
+                    {/* SSN - click to copy */}
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCopySSN(person.id, person.ssn);
                         }}
-                        className={`flex items-center gap-2 text-sm font-mono tracking-wide transition-all group cursor-pointer min-w-[140px] ${
+                        className={`flex items-center gap-2 text-sm font-mono tracking-wide transition-all group cursor-pointer min-w-[120px] ${
                           isSelected
                             ? "text-indigo-300"
                             : "text-slate-400 hover:text-slate-200"
@@ -327,7 +381,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                         ) : (
                           <>
                             <span>{person.ssn}</span>
-                            <Copy className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                            <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                           </>
                         )}
                       </button>
@@ -335,7 +389,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
                     {/* Actions */}
                     <td
-                      className="px-6 py-4 whitespace-nowrap"
+                      className="px-4 py-4 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <CopyButton data={person} />
