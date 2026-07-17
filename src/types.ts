@@ -9,6 +9,7 @@ export interface Person {
   st: string; // Note: Your API uses 'st', not 'state'
   zip: string;
   ssn: string;
+  phone: string;
 }
 
 //Defines the structure of your API response
