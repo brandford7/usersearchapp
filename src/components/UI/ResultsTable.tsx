@@ -24,8 +24,7 @@ const formatDob = (dob: string | null | undefined): string => {
   return dob;
 };
 
-// Fixed: proper pipe format
-// Output: | John | Sweeney | L | 246 Pinecastle Ave | Pittsburgh | PA | 15234 | 4128847146 | 10/13/1971 | 191-64-3353 |
+// Fixed pipe copy format
 const formatPersonForCopy = (person: Person): string => {
   const fields = [
     person.firstname || "",
@@ -46,6 +45,7 @@ const useCellCopy = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copy = (key: string, text: string) => {
+    if (!text || text === "-") return;
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
@@ -79,29 +79,38 @@ const CopyableCell = ({
       onCopy(cellKey, value);
     }}
     title={`Click to copy: ${value}`}
-    className={`group flex items-center gap-1.5 text-left w-full transition-colors ${
+    className={`group flex items-center gap-1 text-left w-full transition-colors ${
       mono ? "font-mono" : ""
     } ${className}`}
   >
     <span
-      className={`text-sm ${isCopied ? "text-green-400" : "text-slate-200"}`}
+      className={`text-xs leading-tight ${
+        isCopied ? "text-green-400" : "text-slate-200"
+      }`}
     >
       {value || "-"}
     </span>
     {isCopied ? (
-      <CheckCircle className="w-3.5 h-3.5 text-green-400 shrink-0" />
+      <CheckCircle className="w-3 h-3 text-green-400 shrink-0" />
     ) : (
-      <Copy className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
+      <Copy className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
     )}
   </button>
 );
 
-// Column divider component
-const ColDivider = () => (
-  <td className="py-3 px-0 w-px">
-    <div className="w-px h-5 bg-slate-700 mx-auto" />
-  </td>
-);
+const columns = [
+  "First",
+  "Last",
+  "Mid",
+  "Address",
+  "City",
+  "ST",
+  "ZIP",
+  "Phone",
+  "DOB",
+  "SSN",
+  "Actions",
+];
 
 export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const { copy, isCopied } = useCellCopy();
@@ -151,16 +160,16 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
   if (isLoading) {
     return (
-      <div className="w-full h-64 flex flex-col items-center justify-center text-slate-400 bg-[#0f172a] rounded-lg border border-slate-800">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-4"></div>
-        <p className="text-sm font-medium">Searching database...</p>
+      <div className="w-full h-48 flex flex-col items-center justify-center text-slate-400 bg-[#0f172a] rounded-lg border border-slate-800">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-500 mb-3"></div>
+        <p className="text-xs font-medium">Searching database...</p>
       </div>
     );
   }
 
   if (!data || data.length === 0) {
     return (
-      <div className="w-full h-40 flex items-center justify-center text-slate-500 bg-[#0f172a] rounded-lg border border-slate-800">
+      <div className="w-full h-32 flex items-center justify-center text-slate-500 text-xs bg-[#0f172a] rounded-lg border border-slate-800">
         No results found.
       </div>
     );
@@ -169,27 +178,13 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const allSelected = selectedIds.size === data.length && data.length > 0;
   const someSelected = selectedIds.size > 0 && selectedIds.size < data.length;
 
-  const columns = [
-    "First Name",
-    "Last Name",
-    "Middle",
-    "Address",
-    "City",
-    "ST",
-    "ZIP",
-    "Phone",
-    "DOB",
-    "SSN",
-    "Actions",
-  ];
-
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Selection Toolbar */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-indigo-900/20 border border-indigo-700/50 rounded-lg p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-indigo-900/20 border border-indigo-700/50 rounded-lg px-4 py-2.5">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-indigo-300">
+            <span className="text-xs font-medium text-indigo-300">
               {selectedIds.size} row{selectedIds.size !== 1 ? "s" : ""} selected
             </span>
             <button
@@ -200,10 +195,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             <button
               onClick={copySelectedSSNs}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs font-medium ${
                 copiedSSNs
                   ? "bg-green-700 text-white"
                   : "bg-slate-700 hover:bg-slate-600 text-slate-200"
@@ -211,18 +206,19 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             >
               {copiedSSNs ? (
                 <>
-                  <CheckCircle className="w-4 h-4" /> SSNs Copied!
+                  <CheckCircle className="w-3.5 h-3.5" /> SSNs Copied!
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4" /> Copy SSNs ({selectedIds.size})
+                  <Copy className="w-3.5 h-3.5" /> Copy SSNs ({selectedIds.size}
+                  )
                 </>
               )}
             </button>
 
             <button
               onClick={copySelectedRows}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors text-xs font-medium ${
                 copiedRows
                   ? "bg-green-700 text-white"
                   : "bg-indigo-600 hover:bg-indigo-700 text-white"
@@ -230,11 +226,11 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             >
               {copiedRows ? (
                 <>
-                  <CheckCircle className="w-4 h-4" /> Rows Copied!
+                  <CheckCircle className="w-3.5 h-3.5" /> Rows Copied!
                 </>
               ) : (
                 <>
-                  <ClipboardList className="w-4 h-4" /> Copy Rows (
+                  <ClipboardList className="w-3.5 h-3.5" /> Copy Rows (
                   {selectedIds.size})
                 </>
               )}
@@ -243,14 +239,33 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         </div>
       )}
 
-      {/* Table - no overflow scroll, full width */}
+      {/* Table */}
       <div className="rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
-        <table className="w-full table-fixed divide-y divide-slate-800">
+        <table
+          className="w-full table-fixed"
+          style={{ borderCollapse: "separate", borderSpacing: 0 }}
+        >
+          {/* Colgroup for widths */}
+          <colgroup>
+            <col className="w-8" /> {/* checkbox */}
+            <col className="w-[8%]" /> {/* first */}
+            <col className="w-[8%]" /> {/* last */}
+            <col className="w-[5%]" /> {/* mid */}
+            <col className="w-[14%]" /> {/* address */}
+            <col className="w-[8%]" /> {/* city */}
+            <col className="w-[4%]" /> {/* st */}
+            <col className="w-[6%]" /> {/* zip */}
+            <col className="w-[9%]" /> {/* phone */}
+            <col className="w-[8%]" /> {/* dob */}
+            <col className="w-[10%]" /> {/* ssn */}
+            <col className="w-[8%]" /> {/* actions */}
+          </colgroup>
+
           {/* Header */}
-          <thead className="bg-[#020617]">
-            <tr>
-              {/* Checkbox col */}
-              <th scope="col" className="px-4 py-4 w-10">
+          <thead>
+            <tr className="bg-[#020617]">
+              {/* Checkbox */}
+              <th className="px-2 py-2 border-b border-r border-slate-700">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -258,63 +273,61 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     if (el) el.indeterminate = someSelected;
                   }}
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
+                  className="w-3.5 h-3.5 rounded border-slate-600 bg-slate-800 cursor-pointer accent-indigo-500"
                 />
               </th>
 
-              {/* Divider placeholder */}
-              <th className="w-px p-0" />
-
               {columns.map((col, i) => (
-                <>
-                  <th
-                    key={col}
-                    className="px-3 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
-                  >
-                    {col}
-                  </th>
-                  {/* Divider after every column except last */}
-                  {i < columns.length - 1 && (
-                    <th key={`div-${col}`} className="w-px p-0" />
-                  )}
-                </>
+                <th
+                  key={col}
+                  className={`px-2 py-2 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-700 ${
+                    i < columns.length - 1 ? "border-r border-slate-700" : ""
+                  }`}
+                >
+                  {col}
+                </th>
               ))}
             </tr>
           </thead>
 
           {/* Body */}
-          <tbody className="divide-y divide-slate-800">
+          <tbody>
             {data.map((person, index) => {
               const isSelected = selectedIds.has(person.id);
               const rowKey = person.id;
+              const isLast = index === data.length - 1;
 
               return (
                 <tr
                   key={`${person.id}-${index}`}
                   onClick={() => toggleRowSelection(person.id)}
-                  className={`transition-colors duration-150 cursor-pointer ${
+                  className={`transition-colors duration-100 cursor-pointer ${
                     isSelected
-                      ? "bg-indigo-900/30 border-l-2 border-l-indigo-500"
-                      : "hover:bg-slate-800/50"
+                      ? "bg-indigo-900/30"
+                      : index % 2 === 0
+                        ? "bg-[#0f172a] hover:bg-slate-800/60"
+                        : "bg-[#0c1526] hover:bg-slate-800/60"
                   }`}
                 >
                   {/* Checkbox */}
                   <td
-                    className="px-4 py-3"
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${
+                      !isLast ? "border-b border-slate-800" : ""
+                    } ${isSelected ? "border-l-2 border-l-indigo-500" : ""}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleRowSelection(person.id)}
-                      className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
+                      className="w-3.5 h-3.5 rounded border-slate-600 bg-slate-800 cursor-pointer accent-indigo-500"
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* First Name */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.firstname || ""}
                       cellKey={`${rowKey}-firstname`}
@@ -324,10 +337,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* Last Name */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.lastname || ""}
                       cellKey={`${rowKey}-lastname`}
@@ -337,10 +350,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
-                  {/* Middle Name */}
-                  <td className="px-3 py-3">
+                  {/* Middle */}
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.middlename || ""}
                       cellKey={`${rowKey}-middlename`}
@@ -350,10 +363,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* Address */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.address || ""}
                       cellKey={`${rowKey}-address`}
@@ -362,10 +375,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* City */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.city || ""}
                       cellKey={`${rowKey}-city`}
@@ -374,10 +387,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* State */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.st || ""}
                       cellKey={`${rowKey}-st`}
@@ -386,10 +399,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* ZIP */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.zip || ""}
                       cellKey={`${rowKey}-zip`}
@@ -399,10 +412,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* Phone */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.phone || ""}
                       cellKey={`${rowKey}-phone`}
@@ -412,10 +425,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* DOB */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={formatDob(person.dob)}
                       cellKey={`${rowKey}-dob`}
@@ -425,10 +438,10 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* SSN */}
-                  <td className="px-3 py-3">
+                  <td
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
+                  >
                     <CopyableCell
                       value={person.ssn || ""}
                       cellKey={`${rowKey}-ssn`}
@@ -441,11 +454,9 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  <ColDivider />
-
                   {/* Actions */}
                   <td
-                    className="px-3 py-3"
+                    className={`px-2 py-1.5 ${!isLast ? "border-b border-slate-800" : ""}`}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <CopyButton data={person} />
@@ -457,7 +468,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         </table>
 
         {/* Footer */}
-        <div className="bg-[#020617] px-6 py-3 border-t border-slate-800 text-xs text-slate-500 flex items-center justify-between">
+        <div className="bg-[#020617] px-4 py-2 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between">
           <span>Showing {data.length} results</span>
           {selectedIds.size > 0 && (
             <span className="text-indigo-400 font-medium">
