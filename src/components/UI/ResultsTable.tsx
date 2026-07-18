@@ -9,31 +9,25 @@ interface ResultsTableProps {
   isLoading?: boolean;
 }
 
-// Format DOB from YYYY-MM-DD or YYYYMMDD to MM/DD/YYYY
 const formatDob = (dob: string | null | undefined): string => {
   if (!dob) return "-";
-
-  // YYYY-MM-DD → MM/DD/YYYY
   if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
     const [year, month, day] = dob.split("-");
     return `${month}/${day}/${year}`;
   }
-
-  // YYYYMMDD → MM/DD/YYYY
   if (/^\d{8}$/.test(dob)) {
     const year = dob.slice(0, 4);
     const month = dob.slice(4, 6);
     const day = dob.slice(6, 8);
     return `${month}/${day}/${year}`;
   }
-
   return dob;
 };
 
-// Format row for copy: | John | Sweeney | L | 246 Pinecastle Ave | Pittsburgh | PA | 15234 | 4128847146 | 10/13/1971 | 191-64-3353 |
+// Fixed: proper pipe format
+// Output: | John | Sweeney | L | 246 Pinecastle Ave | Pittsburgh | PA | 15234 | 4128847146 | 10/13/1971 | 191-64-3353 |
 const formatPersonForCopy = (person: Person): string => {
-  return [
-    "",
+  const fields = [
     person.firstname || "",
     person.lastname || "",
     person.middlename || "",
@@ -44,13 +38,10 @@ const formatPersonForCopy = (person: Person): string => {
     person.phone || "",
     formatDob(person.dob),
     person.ssn || "",
-    "",
-  ]
-    .join(" | ")
-    .trim();
+  ];
+  return `| ${fields.join(" | ")} |`;
 };
 
-// Cell copy hook - tracks copied state per cell key
 const useCellCopy = () => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -65,7 +56,6 @@ const useCellCopy = () => {
   return { copy, isCopied };
 };
 
-// Reusable copyable cell
 interface CopyableCellProps {
   value: string;
   cellKey: string;
@@ -106,15 +96,20 @@ const CopyableCell = ({
   </button>
 );
 
+// Column divider component
+const ColDivider = () => (
+  <td className="py-3 px-0 w-px">
+    <div className="w-px h-5 bg-slate-700 mx-auto" />
+  </td>
+);
+
 export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const { copy, isCopied } = useCellCopy();
 
-  // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [copiedRows, setCopiedRows] = useState(false);
   const [copiedSSNs, setCopiedSSNs] = useState(false);
 
-  // Multi-select handlers
   const toggleRowSelection = (personId: string) => {
     const newSelected = new Set(selectedIds);
     if (newSelected.has(personId)) {
@@ -136,7 +131,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
   const clearSelection = () => setSelectedIds(new Set());
 
-  // Copy selected full rows with pipe separator
   const copySelectedRows = () => {
     if (!data || selectedIds.size === 0) return;
     const selected = data.filter((p) => selectedIds.has(p.id));
@@ -146,7 +140,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
     setTimeout(() => setCopiedRows(false), 2000);
   };
 
-  // Copy selected SSNs only (one per line)
   const copySelectedSSNs = () => {
     if (!data || selectedIds.size === 0) return;
     const selected = data.filter((p) => selectedIds.has(p.id));
@@ -176,6 +169,20 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const allSelected = selectedIds.size === data.length && data.length > 0;
   const someSelected = selectedIds.size > 0 && selectedIds.size < data.length;
 
+  const columns = [
+    "First Name",
+    "Last Name",
+    "Middle",
+    "Address",
+    "City",
+    "ST",
+    "ZIP",
+    "Phone",
+    "DOB",
+    "SSN",
+    "Actions",
+  ];
+
   return (
     <div className="space-y-3">
       {/* Selection Toolbar */}
@@ -194,7 +201,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Copy SSNs only */}
             <button
               onClick={copySelectedSSNs}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
@@ -205,18 +211,15 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             >
               {copiedSSNs ? (
                 <>
-                  <CheckCircle className="w-4 h-4" />
-                  SSNs Copied!
+                  <CheckCircle className="w-4 h-4" /> SSNs Copied!
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4" />
-                  Copy SSNs ({selectedIds.size})
+                  <Copy className="w-4 h-4" /> Copy SSNs ({selectedIds.size})
                 </>
               )}
             </button>
 
-            {/* Copy full rows */}
             <button
               onClick={copySelectedRows}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
@@ -227,13 +230,12 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             >
               {copiedRows ? (
                 <>
-                  <CheckCircle className="w-4 h-4" />
-                  Rows Copied!
+                  <CheckCircle className="w-4 h-4" /> Rows Copied!
                 </>
               ) : (
                 <>
-                  <ClipboardList className="w-4 h-4" />
-                  Copy Rows ({selectedIds.size})
+                  <ClipboardList className="w-4 h-4" /> Copy Rows (
+                  {selectedIds.size})
                 </>
               )}
             </button>
@@ -241,199 +243,218 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-800">
-            {/* Header */}
-            <thead className="bg-[#020617]">
-              <tr>
-                <th scope="col" className="px-4 py-4 w-10">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = someSelected;
-                    }}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
-                  />
-                </th>
-                {[
-                  "First Name",
-                  "Last Name",
-                  "Middle",
-                  "Address",
-                  "City",
-                  "ST",
-                  "ZIP",
-                  "Phone",
-                  "DOB",
-                  "SSN",
-                  "Actions",
-                ].map((col) => (
+      {/* Table - no overflow scroll, full width */}
+      <div className="rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
+        <table className="w-full table-fixed divide-y divide-slate-800">
+          {/* Header */}
+          <thead className="bg-[#020617]">
+            <tr>
+              {/* Checkbox col */}
+              <th scope="col" className="px-4 py-4 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
+                />
+              </th>
+
+              {/* Divider placeholder */}
+              <th className="w-px p-0" />
+
+              {columns.map((col, i) => (
+                <>
                   <th
                     key={col}
-                    className="px-4 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap"
+                    className="px-3 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider"
                   >
                     {col}
                   </th>
-                ))}
-              </tr>
-            </thead>
+                  {/* Divider after every column except last */}
+                  {i < columns.length - 1 && (
+                    <th key={`div-${col}`} className="w-px p-0" />
+                  )}
+                </>
+              ))}
+            </tr>
+          </thead>
 
-            {/* Body */}
-            <tbody className="divide-y divide-slate-800">
-              {data.map((person, index) => {
-                const isSelected = selectedIds.has(person.id);
-                const rowKey = person.id;
+          {/* Body */}
+          <tbody className="divide-y divide-slate-800">
+            {data.map((person, index) => {
+              const isSelected = selectedIds.has(person.id);
+              const rowKey = person.id;
 
-                return (
-                  <tr
-                    key={`${person.id}-${index}`}
-                    onClick={() => toggleRowSelection(person.id)}
-                    className={`transition-colors duration-150 cursor-pointer ${
-                      isSelected
-                        ? "bg-indigo-900/30 border-l-2 border-l-indigo-500"
-                        : "hover:bg-slate-800/50"
-                    }`}
+              return (
+                <tr
+                  key={`${person.id}-${index}`}
+                  onClick={() => toggleRowSelection(person.id)}
+                  className={`transition-colors duration-150 cursor-pointer ${
+                    isSelected
+                      ? "bg-indigo-900/30 border-l-2 border-l-indigo-500"
+                      : "hover:bg-slate-800/50"
+                  }`}
+                >
+                  {/* Checkbox */}
+                  <td
+                    className="px-4 py-3"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Checkbox */}
-                    <td
-                      className="px-4 py-3"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleRowSelection(person.id)}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
-                      />
-                    </td>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleRowSelection(person.id)}
+                      className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer accent-indigo-500"
+                    />
+                  </td>
 
-                    {/* First Name */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.firstname || ""}
-                        cellKey={`${rowKey}-firstname`}
-                        isCopied={isCopied(`${rowKey}-firstname`)}
-                        onCopy={copy}
-                        className="font-medium"
-                      />
-                    </td>
+                  <ColDivider />
 
-                    {/* Last Name */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.lastname || ""}
-                        cellKey={`${rowKey}-lastname`}
-                        isCopied={isCopied(`${rowKey}-lastname`)}
-                        onCopy={copy}
-                        className="font-medium"
-                      />
-                    </td>
+                  {/* First Name */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.firstname || ""}
+                      cellKey={`${rowKey}-firstname`}
+                      isCopied={isCopied(`${rowKey}-firstname`)}
+                      onCopy={copy}
+                      className="font-medium"
+                    />
+                  </td>
 
-                    {/* Middle Name */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.middlename || ""}
-                        cellKey={`${rowKey}-middlename`}
-                        isCopied={isCopied(`${rowKey}-middlename`)}
-                        onCopy={copy}
-                        className="text-slate-400"
-                      />
-                    </td>
+                  <ColDivider />
 
-                    {/* Address */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.address || ""}
-                        cellKey={`${rowKey}-address`}
-                        isCopied={isCopied(`${rowKey}-address`)}
-                        onCopy={copy}
-                      />
-                    </td>
+                  {/* Last Name */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.lastname || ""}
+                      cellKey={`${rowKey}-lastname`}
+                      isCopied={isCopied(`${rowKey}-lastname`)}
+                      onCopy={copy}
+                      className="font-medium"
+                    />
+                  </td>
 
-                    {/* City */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.city || ""}
-                        cellKey={`${rowKey}-city`}
-                        isCopied={isCopied(`${rowKey}-city`)}
-                        onCopy={copy}
-                      />
-                    </td>
+                  <ColDivider />
 
-                    {/* State */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.st || ""}
-                        cellKey={`${rowKey}-st`}
-                        isCopied={isCopied(`${rowKey}-st`)}
-                        onCopy={copy}
-                      />
-                    </td>
+                  {/* Middle Name */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.middlename || ""}
+                      cellKey={`${rowKey}-middlename`}
+                      isCopied={isCopied(`${rowKey}-middlename`)}
+                      onCopy={copy}
+                      className="text-slate-400"
+                    />
+                  </td>
 
-                    {/* ZIP */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.zip || ""}
-                        cellKey={`${rowKey}-zip`}
-                        isCopied={isCopied(`${rowKey}-zip`)}
-                        onCopy={copy}
-                        mono
-                      />
-                    </td>
+                  <ColDivider />
 
-                    {/* Phone */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.phone || ""}
-                        cellKey={`${rowKey}-phone`}
-                        isCopied={isCopied(`${rowKey}-phone`)}
-                        onCopy={copy}
-                        mono
-                      />
-                    </td>
+                  {/* Address */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.address || ""}
+                      cellKey={`${rowKey}-address`}
+                      isCopied={isCopied(`${rowKey}-address`)}
+                      onCopy={copy}
+                    />
+                  </td>
 
-                    {/* DOB */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={formatDob(person.dob)}
-                        cellKey={`${rowKey}-dob`}
-                        isCopied={isCopied(`${rowKey}-dob`)}
-                        onCopy={copy}
-                        mono
-                      />
-                    </td>
+                  <ColDivider />
 
-                    {/* SSN */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <CopyableCell
-                        value={person.ssn || ""}
-                        cellKey={`${rowKey}-ssn`}
-                        isCopied={isCopied(`${rowKey}-ssn`)}
-                        onCopy={copy}
-                        mono
-                        className={
-                          isSelected ? "text-indigo-300" : "text-slate-400"
-                        }
-                      />
-                    </td>
+                  {/* City */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.city || ""}
+                      cellKey={`${rowKey}-city`}
+                      isCopied={isCopied(`${rowKey}-city`)}
+                      onCopy={copy}
+                    />
+                  </td>
 
-                    {/* Actions */}
-                    <td
-                      className="px-4 py-3 whitespace-nowrap"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <CopyButton data={person} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  <ColDivider />
+
+                  {/* State */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.st || ""}
+                      cellKey={`${rowKey}-st`}
+                      isCopied={isCopied(`${rowKey}-st`)}
+                      onCopy={copy}
+                    />
+                  </td>
+
+                  <ColDivider />
+
+                  {/* ZIP */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.zip || ""}
+                      cellKey={`${rowKey}-zip`}
+                      isCopied={isCopied(`${rowKey}-zip`)}
+                      onCopy={copy}
+                      mono
+                    />
+                  </td>
+
+                  <ColDivider />
+
+                  {/* Phone */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.phone || ""}
+                      cellKey={`${rowKey}-phone`}
+                      isCopied={isCopied(`${rowKey}-phone`)}
+                      onCopy={copy}
+                      mono
+                    />
+                  </td>
+
+                  <ColDivider />
+
+                  {/* DOB */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={formatDob(person.dob)}
+                      cellKey={`${rowKey}-dob`}
+                      isCopied={isCopied(`${rowKey}-dob`)}
+                      onCopy={copy}
+                      mono
+                    />
+                  </td>
+
+                  <ColDivider />
+
+                  {/* SSN */}
+                  <td className="px-3 py-3">
+                    <CopyableCell
+                      value={person.ssn || ""}
+                      cellKey={`${rowKey}-ssn`}
+                      isCopied={isCopied(`${rowKey}-ssn`)}
+                      onCopy={copy}
+                      mono
+                      className={
+                        isSelected ? "text-indigo-300" : "text-slate-400"
+                      }
+                    />
+                  </td>
+
+                  <ColDivider />
+
+                  {/* Actions */}
+                  <td
+                    className="px-3 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <CopyButton data={person} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
         {/* Footer */}
         <div className="bg-[#020617] px-6 py-3 border-t border-slate-800 text-xs text-slate-500 flex items-center justify-between">
