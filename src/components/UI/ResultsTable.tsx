@@ -26,36 +26,18 @@ const formatDob = (dob: string | null | undefined): string => {
 
 const formatPersonForCopy = (person: Person): string => {
   const fields = [
-    person.firstname,
-    person.lastname,
-    person.middlename,
-    person.address,
-    person.city,
-    person.st,
-    person.zip,
-    person.phone,
+    person.firstname || "",
+    person.lastname || "",
+    person.middlename || "",
+    person.address || "",
+    person.city || "",
+    person.st || "",
+    person.zip || "",
+    person.phone || "",
     formatDob(person.dob),
-    person.ssn,
+    person.ssn || "",
   ];
-
-  const activeFields = fields
-    .map((field) => (field ? String(field).trim() : ""))
-    .filter((field) => {
-      // 1. Remove empty fields
-      if (!field) return false;
-
-      // 2. Remove the fallback dash from formatDob
-      if (field === "-") return false;
-
-      // 3. Strip out fields that are just commas or trailing punctuation
-      if (/^[,\s]+$/.test(field)) return false;
-
-      return true;
-    })
-    // Optional: Clean up any stray trailing commas *inside* strings like "JAMES," -> "JAMES"
-    .map((field) => field.replace(/,+$/, ""));
-
-  return `| ${activeFields.join(" | ")} |`;
+  return `| ${fields.join(" | ")} |`;
 };
 
 const useCellCopy = () => {
@@ -82,6 +64,7 @@ interface CopyableCellProps {
   mono?: boolean;
 }
 
+// Cell itself is the clickable area - no inner button needed
 const CopyableCell = ({
   value,
   cellKey,
@@ -90,29 +73,31 @@ const CopyableCell = ({
   className = "",
   mono = false,
 }: CopyableCellProps) => (
-  <button
+  <td
     onClick={(e) => {
       e.stopPropagation();
       onCopy(cellKey, value);
     }}
     title={`Click to copy: ${value}`}
-    className={`group flex items-center gap-1 text-left w-full transition-colors ${
+    className={`px-2 py-1.5 border-r border-slate-700/60 cursor-pointer group transition-colors hover:bg-slate-700/30 ${
       mono ? "font-mono" : ""
     } ${className}`}
   >
-    <span
-      className={`text-xs leading-tight ${
-        isCopied ? "text-green-400" : "text-slate-200"
-      }`}
-    >
-      {value || "-"}
-    </span>
-    {isCopied ? (
-      <CheckCircle className="w-3 h-3 text-green-400 shrink-0" />
-    ) : (
-      <Copy className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
-    )}
-  </button>
+    <div className="flex items-center gap-1">
+      <span
+        className={`text-xs leading-tight truncate ${
+          isCopied ? "text-green-400" : "text-slate-200"
+        }`}
+      >
+        {value || "-"}
+      </span>
+      {isCopied ? (
+        <CheckCircle className="w-3 h-3 text-green-400 shrink-0" />
+      ) : (
+        <Copy className="w-3 h-3 text-slate-600 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
+      )}
+    </div>
+  </td>
 );
 
 const columns = [
@@ -262,7 +247,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
           className="w-full table-fixed"
           style={{ borderCollapse: "separate", borderSpacing: 0 }}
         >
-          {/* Colgroup for widths */}
           <colgroup>
             <col className="w-[4%]" /> {/* checkbox */}
             <col className="w-[8%]" /> {/* first */}
@@ -281,7 +265,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
           {/* Header */}
           <thead>
             <tr className="bg-[#020617]">
-              {/* Checkbox */}
               <th className="px-2 py-2 border-b border-r border-slate-700">
                 <input
                   type="checkbox"
@@ -290,10 +273,9 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     if (el) el.indeterminate = someSelected;
                   }}
                   onChange={toggleSelectAll}
-                  className="w-[5%] h-3.5 rounded border-slate-600 bg-slate-800 cursor-pointer accent-indigo-500"
+                  className="w-3.5 h-3.5 rounded border-slate-600 bg-slate-800 cursor-pointer accent-indigo-500"
                 />
               </th>
-
               {columns.map((col, i) => (
                 <th
                   key={col}
@@ -313,25 +295,24 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
               const isSelected = selectedIds.has(person.id);
               const rowKey = person.id;
               const isLast = index === data.length - 1;
+              const borderB = !isLast ? "border-b border-slate-800" : "";
 
               return (
                 <tr
                   key={`${person.id}-${index}`}
-                  onClick={() => toggleRowSelection(person.id)}
-                  className={`transition-colors duration-100 cursor-pointer ${
+                  className={`transition-colors duration-100 ${
                     isSelected
                       ? "bg-indigo-900/30"
                       : index % 2 === 0
-                        ? "bg-[#0f172a] hover:bg-slate-800/60"
-                        : "bg-[#0c1526] hover:bg-slate-800/60"
+                        ? "bg-[#0f172a] hover:bg-slate-800/40"
+                        : "bg-[#0c1526] hover:bg-slate-800/40"
                   }`}
                 >
-                  {/* Checkbox */}
+                  {/* Checkbox - ONLY way to select a row */}
                   <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${
-                      !isLast ? "border-b border-slate-800" : ""
-                    } ${isSelected ? "border-l-2 border-l-indigo-500" : ""}`}
-                    onClick={(e) => e.stopPropagation()}
+                    className={`px-2 py-1.5 border-r border-slate-700/60 ${borderB} ${
+                      isSelected ? "border-l-2 border-l-indigo-500" : ""
+                    }`}
                   >
                     <input
                       type="checkbox"
@@ -341,141 +322,93 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     />
                   </td>
 
-                  {/* First Name */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.firstname || ""}
-                      cellKey={`${rowKey}-firstname`}
-                      isCopied={isCopied(`${rowKey}-firstname`)}
-                      onCopy={copy}
-                      className="font-medium"
-                    />
-                  </td>
+                  {/* Every data cell is a CopyableCell (td) */}
+                  <CopyableCell
+                    value={person.firstname || ""}
+                    cellKey={`${rowKey}-firstname`}
+                    isCopied={isCopied(`${rowKey}-firstname`)}
+                    onCopy={copy}
+                    className={`font-medium ${borderB}`}
+                  />
 
-                  {/* Last Name */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.lastname || ""}
-                      cellKey={`${rowKey}-lastname`}
-                      isCopied={isCopied(`${rowKey}-lastname`)}
-                      onCopy={copy}
-                      className="font-medium"
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.lastname || ""}
+                    cellKey={`${rowKey}-lastname`}
+                    isCopied={isCopied(`${rowKey}-lastname`)}
+                    onCopy={copy}
+                    className={`font-medium ${borderB}`}
+                  />
 
-                  {/* Middle */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.middlename || ""}
-                      cellKey={`${rowKey}-middlename`}
-                      isCopied={isCopied(`${rowKey}-middlename`)}
-                      onCopy={copy}
-                      className="text-slate-400"
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.middlename || ""}
+                    cellKey={`${rowKey}-middlename`}
+                    isCopied={isCopied(`${rowKey}-middlename`)}
+                    onCopy={copy}
+                    className={`text-slate-400 ${borderB}`}
+                  />
 
-                  {/* Address */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.address || ""}
-                      cellKey={`${rowKey}-address`}
-                      isCopied={isCopied(`${rowKey}-address`)}
-                      onCopy={copy}
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.address || ""}
+                    cellKey={`${rowKey}-address`}
+                    isCopied={isCopied(`${rowKey}-address`)}
+                    onCopy={copy}
+                    className={borderB}
+                  />
 
-                  {/* City */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.city || ""}
-                      cellKey={`${rowKey}-city`}
-                      isCopied={isCopied(`${rowKey}-city`)}
-                      onCopy={copy}
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.city || ""}
+                    cellKey={`${rowKey}-city`}
+                    isCopied={isCopied(`${rowKey}-city`)}
+                    onCopy={copy}
+                    className={borderB}
+                  />
 
-                  {/* State */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.st || ""}
-                      cellKey={`${rowKey}-st`}
-                      isCopied={isCopied(`${rowKey}-st`)}
-                      onCopy={copy}
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.st || ""}
+                    cellKey={`${rowKey}-st`}
+                    isCopied={isCopied(`${rowKey}-st`)}
+                    onCopy={copy}
+                    className={borderB}
+                  />
 
-                  {/* ZIP */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.zip || ""}
-                      cellKey={`${rowKey}-zip`}
-                      isCopied={isCopied(`${rowKey}-zip`)}
-                      onCopy={copy}
-                      mono
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.zip || ""}
+                    cellKey={`${rowKey}-zip`}
+                    isCopied={isCopied(`${rowKey}-zip`)}
+                    onCopy={copy}
+                    mono
+                    className={borderB}
+                  />
 
-                  {/* Phone */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.phone || ""}
-                      cellKey={`${rowKey}-phone`}
-                      isCopied={isCopied(`${rowKey}-phone`)}
-                      onCopy={copy}
-                      mono
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.phone || ""}
+                    cellKey={`${rowKey}-phone`}
+                    isCopied={isCopied(`${rowKey}-phone`)}
+                    onCopy={copy}
+                    mono
+                    className={borderB}
+                  />
 
-                  {/* DOB */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={formatDob(person.dob)}
-                      cellKey={`${rowKey}-dob`}
-                      isCopied={isCopied(`${rowKey}-dob`)}
-                      onCopy={copy}
-                      mono
-                    />
-                  </td>
+                  <CopyableCell
+                    value={formatDob(person.dob)}
+                    cellKey={`${rowKey}-dob`}
+                    isCopied={isCopied(`${rowKey}-dob`)}
+                    onCopy={copy}
+                    mono
+                    className={borderB}
+                  />
 
-                  {/* SSN */}
-                  <td
-                    className={`px-2 py-1.5 border-r border-slate-700/60 ${!isLast ? "border-b border-slate-800" : ""}`}
-                  >
-                    <CopyableCell
-                      value={person.ssn || ""}
-                      cellKey={`${rowKey}-ssn`}
-                      isCopied={isCopied(`${rowKey}-ssn`)}
-                      onCopy={copy}
-                      mono
-                      className={
-                        isSelected ? "text-indigo-300" : "text-slate-400"
-                      }
-                    />
-                  </td>
+                  <CopyableCell
+                    value={person.ssn || ""}
+                    cellKey={`${rowKey}-ssn`}
+                    isCopied={isCopied(`${rowKey}-ssn`)}
+                    onCopy={copy}
+                    mono
+                    className={`${isSelected ? "text-indigo-300" : "text-slate-400"} ${borderB}`}
+                  />
 
                   {/* Actions */}
-                  <td
-                    className={`px-2 py-1.5 ${!isLast ? "border-b border-slate-800" : ""}`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <td className={`px-2 py-1.5 ${borderB}`}>
                     <CopyButton data={person} />
                   </td>
                 </tr>
