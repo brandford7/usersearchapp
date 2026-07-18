@@ -24,7 +24,6 @@ const formatDob = (dob: string | null | undefined): string => {
   return dob;
 };
 
-// Fixed pipe copy format
 const formatPersonForCopy = (person: Person): string => {
   const fields = [
     person.firstname,
@@ -39,10 +38,22 @@ const formatPersonForCopy = (person: Person): string => {
     person.ssn,
   ];
 
-  // Filter out undefined, null, or empty string values
-  const activeFields = fields.filter(
-    (field) => field !== undefined && field !== null && field !== "",
-  );
+  const activeFields = fields
+    .map((field) => (field ? String(field).trim() : ""))
+    .filter((field) => {
+      // 1. Remove empty fields
+      if (!field) return false;
+
+      // 2. Remove the fallback dash from formatDob
+      if (field === "-") return false;
+
+      // 3. Strip out fields that are just commas or trailing punctuation
+      if (/^[,\s]+$/.test(field)) return false;
+
+      return true;
+    })
+    // Optional: Clean up any stray trailing commas *inside* strings like "JAMES," -> "JAMES"
+    .map((field) => field.replace(/,+$/, ""));
 
   return `| ${activeFields.join(" | ")} |`;
 };
@@ -253,18 +264,18 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         >
           {/* Colgroup for widths */}
           <colgroup>
-            <col className="w-[5%]" /> {/* checkbox */}
+            <col className="w-[4%]" /> {/* checkbox */}
             <col className="w-[8%]" /> {/* first */}
             <col className="w-[8%]" /> {/* last */}
             <col className="w-[5%]" /> {/* mid */}
             <col className="w-[14%]" /> {/* address */}
-            <col className="w-[8%]" /> {/* city */}
+            <col className="w-[14%]" /> {/* city */}
             <col className="w-[4%]" /> {/* st */}
-            <col className="w-[6%]" /> {/* zip */}
+            <col className="w-[4%]" /> {/* zip */}
             <col className="w-[9%]" /> {/* phone */}
             <col className="w-[8%]" /> {/* dob */}
             <col className="w-[10%]" /> {/* ssn */}
-            <col className="w-[8%]" /> {/* actions */}
+            <col className="w-[4%]" /> {/* actions */}
           </colgroup>
 
           {/* Header */}
@@ -279,7 +290,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     if (el) el.indeterminate = someSelected;
                   }}
                   onChange={toggleSelectAll}
-                  className="w-3.5 h-3.5 rounded border-slate-600 bg-slate-800 cursor-pointer accent-indigo-500"
+                  className="w-[5%] h-3.5 rounded border-slate-600 bg-slate-800 cursor-pointer accent-indigo-500"
                 />
               </th>
 
