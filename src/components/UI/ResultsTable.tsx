@@ -27,18 +27,24 @@ const formatDob = (dob: string | null | undefined): string => {
 // Fixed pipe copy format
 const formatPersonForCopy = (person: Person): string => {
   const fields = [
-    person.firstname || "",
-    person.lastname || "",
-    person.middlename || "",
-    person.address || "",
-    person.city || "",
-    person.st || "",
-    person.zip || "",
-    person.phone || "",
+    person.firstname,
+    person.lastname,
+    person.middlename,
+    person.address,
+    person.city,
+    person.st,
+    person.zip,
+    person.phone,
     formatDob(person.dob),
-    person.ssn || "",
+    person.ssn,
   ];
-  return `| ${fields.join(" | ")} |`;
+
+  // Filter out undefined, null, or empty string values
+  const activeFields = fields.filter(
+    (field) => field !== undefined && field !== null && field !== "",
+  );
+
+  return `| ${activeFields.join(" | ")} |`;
 };
 
 const useCellCopy = () => {
@@ -247,7 +253,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
         >
           {/* Colgroup for widths */}
           <colgroup>
-            <col className="w-8" /> {/* checkbox */}
+            <col className="w-[5%]" /> {/* checkbox */}
             <col className="w-[8%]" /> {/* first */}
             <col className="w-[8%]" /> {/* last */}
             <col className="w-[5%]" /> {/* mid */}
