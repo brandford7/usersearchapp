@@ -248,7 +248,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
       {/* Table */}
       <div className="rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
         <table
-          className="w-full table-auto"
+          className="table-auto"
           style={{ borderCollapse: "separate", borderSpacing: 0 }}
         >
           {/* Header */}
