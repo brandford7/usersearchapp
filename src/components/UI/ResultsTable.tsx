@@ -263,7 +263,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             <col className="w-[9%]" /> {/* phone */}
             <col className="w-[8%]" /> {/* dob */}
             <col className="w-[10%]" /> {/* ssn */}
-            <col className="w-[4%]" /> {/* actions */}
+            <col className="w-[5%]" /> {/* actions */}
           </colgroup>
 
           {/* Header */}
@@ -365,6 +365,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     cellKey={`${rowKey}-city`}
                     isCopied={isCopied(`${rowKey}-city`)}
                     onCopy={copy}
+                    center
                     className={borderB}
                   />
 
