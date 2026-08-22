@@ -15,9 +15,15 @@ export interface Person {
 //Defines the structure of your API response
 export interface ApiResponse {
   data: Person[];
-  totalPages: number;
-  total: number;
-  itemsPerPage: number;
+  // null on cursor-paginated pages after the first, unless includeTotal is sent —
+  // cache the value from the first page instead of expecting it on every response.
+  totalPages: number | null;
+  total: number | null;
+  limit: number;
+  nextCursor: string | null;
+  prevCursor: string | null;
+  hasMore: boolean;
+  hasPrevious: boolean;
 }
 
 export interface SearchFilters {

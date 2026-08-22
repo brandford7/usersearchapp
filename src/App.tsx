@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import type { SearchFilters } from "./types";
+import type { ApiResponse, SearchFilters } from "./types";
 import SearchForm from "./components/UI/SearchForm";
 import Pagination from "./components/Pagination";
 import ResultsTable from "./components/UI/ResultsTable";
@@ -30,11 +30,17 @@ const getInitialStateFromURL = () => {
       email: params.get("email") || "",
       phone: params.get("phone") || "",
     },
-    page: parseInt(params.get("page") || "1", 10),
+    cursor: params.get("cursor") || undefined,
+    direction:
+      (params.get("direction") as "next" | "prev" | null) || undefined,
   };
 };
 
-const updateURL = (filters: SearchFilters | null, page: number) => {
+const updateURL = (
+  filters: SearchFilters | null,
+  cursor: string | undefined,
+  direction: "next" | "prev" | undefined,
+) => {
   if (!filters) {
     window.history.pushState({}, "", window.location.pathname);
     return;
@@ -43,13 +49,20 @@ const updateURL = (filters: SearchFilters | null, page: number) => {
   Object.entries(filters).forEach(([key, value]) => {
     if (value) params.append(key, value);
   });
-  params.set("page", page.toString());
+  if (cursor) {
+    params.set("cursor", cursor);
+    params.set("direction", direction ?? "next");
+  }
   const newUrl = `${window.location.pathname}?${params.toString()}`;
   window.history.pushState({ path: newUrl }, "", newUrl);
 };
 
 // --- API FUNCTION ---
-const fetchResults = async (filters: SearchFilters | null, page = 1) => {
+const fetchResults = async (
+  filters: SearchFilters | null,
+  cursor?: string,
+  direction?: "next" | "prev",
+): Promise<ApiResponse | null> => {
   if (!filters) return null;
 
   const params = new URLSearchParams();
@@ -64,11 +77,25 @@ const fetchResults = async (filters: SearchFilters | null, page = 1) => {
   if (filters.email) params.append("email", filters.email);
   if (filters.phone) params.append("phone", filters.phone);
 
-  params.append("page", page.toString());
   params.append("limit", "100");
+  if (cursor) {
+    params.append("cursor", cursor);
+    params.append("direction", direction ?? "next");
+  }
 
   const response = await api.get("/people/search", { params });
-  return response.data;
+  const raw = response.data;
+  return {
+    ...raw,
+    // backend field is `phone1` (matches the DB column); map it to the
+    // `phone` field the UI has always rendered.
+    data: (raw?.data ?? []).map(
+      (p: Record<string, unknown> & { phone1?: string }) => ({
+        ...p,
+        phone: p.phone1,
+      }),
+    ),
+  };
 };
 
 export default function PeopleSearch() {
@@ -94,34 +121,78 @@ export default function PeopleSearch() {
   const [searchParams, setSearchParams] = useState<SearchFilters | null>(
     urlState ? urlState.filters : null,
   );
-  const [page, setPage] = useState(urlState ? urlState.page : 1);
+  const [cursor, setCursor] = useState<string | undefined>(
+    urlState?.cursor,
+  );
+  const [direction, setDirection] = useState<"next" | "prev" | undefined>(
+    urlState?.direction,
+  );
+  // Cosmetic step counter only — actual pagination is driven by `cursor`.
+  const [pageIndex, setPageIndex] = useState(1);
+  // total/totalPages are only sent back on the first page; cache them
+  // client-side so "Showing X results" survives Next/Previous clicks.
+  const [cachedTotal, setCachedTotal] = useState<number | null>(null);
+  const [cachedTotalPages, setCachedTotalPages] = useState<number | null>(
+    null,
+  );
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["search", searchParams, page],
-    queryFn: () => fetchResults(searchParams, page),
+    queryKey: ["search", searchParams, cursor, direction],
+    queryFn: () => fetchResults(searchParams, cursor, direction),
     enabled: !!searchParams,
     staleTime: 1000 * 60 * 5,
     retry: 1,
   });
 
+  // Adjust cached state during render (React's recommended pattern for this,
+  // vs. a useEffect+setState which would cause an extra cascading render).
+  if (data?.total != null && data.total !== cachedTotal) {
+    setCachedTotal(data.total);
+  }
+  if (data?.totalPages != null && data.totalPages !== cachedTotalPages) {
+    setCachedTotalPages(data.totalPages);
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanFilters = { ...inputs };
-    setPage(1);
+    setCursor(undefined);
+    setDirection(undefined);
+    setPageIndex(1);
+    setCachedTotal(null);
+    setCachedTotalPages(null);
     setSearchParams(cleanFilters);
-    updateURL(cleanFilters, 1);
+    updateURL(cleanFilters, undefined, undefined);
   };
 
   const handleReset = () => {
     setInputs(initialFormState);
     setSearchParams(null);
-    setPage(1);
-    updateURL(null, 1);
+    setCursor(undefined);
+    setDirection(undefined);
+    setPageIndex(1);
+    setCachedTotal(null);
+    setCachedTotalPages(null);
+    updateURL(null, undefined, undefined);
+  };
+
+  const handleNext = () => {
+    if (!data?.nextCursor) return;
+    setCursor(data.nextCursor);
+    setDirection("next");
+    setPageIndex((n) => n + 1);
+  };
+
+  const handlePrev = () => {
+    if (!data?.prevCursor) return;
+    setCursor(data.prevCursor);
+    setDirection("prev");
+    setPageIndex((n) => Math.max(1, n - 1));
   };
 
   useEffect(() => {
-    if (searchParams) updateURL(searchParams, page);
-  }, [page, searchParams]);
+    if (searchParams) updateURL(searchParams, cursor, direction);
+  }, [cursor, direction, searchParams]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300 p-6 font-sans">
@@ -147,12 +218,14 @@ export default function PeopleSearch() {
 
         <div className="bg-gray-900 p-5 rounded-xl border border-gray-800 shadow-lg">
           <Pagination
-            currentPage={page}
-            totalItems={data?.total ?? 0}
-            totalPages={data?.totalPages ?? 1}
-            itemsPerPage={data?.itemsPerPage ?? 100}
+            currentPage={pageIndex}
+            totalItems={cachedTotal ?? data?.total ?? 0}
+            totalPages={cachedTotalPages ?? data?.totalPages ?? null}
+            hasMore={data?.hasMore ?? false}
+            hasPrevious={data?.hasPrevious ?? false}
             isLoading={isLoading}
-            onPageChange={(newPage) => setPage(newPage)}
+            onNext={handleNext}
+            onPrev={handlePrev}
           />
           <ResultsTable data={data?.data ?? []} isLoading={isLoading} />
         </div>
