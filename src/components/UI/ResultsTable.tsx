@@ -252,8 +252,8 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             <col className="w-[8%]" /> {/* first */}
             <col className="w-[8%]" /> {/* last */}
             <col className="w-[5%]" /> {/* mid */}
-            <col className="w-[14%]" /> {/* address */}
-            <col className="w-[14%]" /> {/* city */}
+            <col className="w-[20%]" /> {/* address */}
+            <col className="w-[8%]" /> {/* city */}
             <col className="w-[4%]" /> {/* st */}
             <col className="w-[7%]" /> {/* zip */}
             <col className="w-[9%]" /> {/* phone */}
