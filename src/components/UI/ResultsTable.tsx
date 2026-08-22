@@ -89,7 +89,7 @@ const CopyableCell = ({
       className={`flex items-center gap-1 ${center ? "justify-center" : ""}`}
     >
       <span
-        className={`text-xs leading-tight truncate ${
+        className={`text-xs leading-tight whitespace-nowrap ${
           isCopied ? "text-green-400" : "text-slate-200"
         }`}
       >
@@ -247,25 +247,11 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
       {/* Table */}
       <div className="rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
+        <div className="overflow-x-auto">
         <table
-          className="w-full table-fixed"
+          className="w-full table-auto"
           style={{ borderCollapse: "separate", borderSpacing: 0 }}
         >
-          <colgroup>
-            <col className="w-[4%]" /> {/* checkbox */}
-            <col className="w-[8%]" /> {/* first */}
-            <col className="w-[8%]" /> {/* last */}
-            <col className="w-[7%]" /> {/* mid */}
-            <col className="w-[20%]" /> {/* address */}
-            <col className="w-[10%]" /> {/* city */}
-            <col className="w-[4%]" /> {/* st */}
-            <col className="w-[7%]" /> {/* zip */}
-            <col className="w-[9%]" /> {/* phone */}
-            <col className="w-[8%]" /> {/* dob */}
-            <col className="w-[10%]" /> {/* ssn */}
-            <col className="w-[5%]" /> {/* actions */}
-          </colgroup>
-
           {/* Header */}
           <thead>
             <tr className="bg-[#020617]">
@@ -283,7 +269,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
               {columns.map((col, i) => (
                 <th
                   key={col}
-                  className={`px-2 py-2 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-700 ${
+                  className={`px-2 py-2 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap border-b border-slate-700 ${
                     i < columns.length - 1 ? "border-r border-slate-700" : ""
                   }`}
                 >
@@ -422,6 +408,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             })}
           </tbody>
         </table>
+        </div>
 
         {/* Footer */}
         <div className="bg-[#020617] px-4 py-2 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between">
