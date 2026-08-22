@@ -62,6 +62,7 @@ interface CopyableCellProps {
   onCopy: (key: string, value: string) => void;
   className?: string;
   mono?: boolean;
+  center?: boolean;
 }
 
 // Cell itself is the clickable area - no inner button needed
@@ -72,6 +73,7 @@ const CopyableCell = ({
   onCopy,
   className = "",
   mono = false,
+  center = false,
 }: CopyableCellProps) => (
   <td
     onClick={(e) => {
@@ -83,7 +85,9 @@ const CopyableCell = ({
       mono ? "font-mono" : ""
     } ${className}`}
   >
-    <div className="flex items-center gap-1">
+    <div
+      className={`flex items-center gap-1 ${center ? "justify-center" : ""}`}
+    >
       <span
         className={`text-xs leading-tight truncate ${
           isCopied ? "text-green-400" : "text-slate-200"
@@ -251,9 +255,9 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             <col className="w-[4%]" /> {/* checkbox */}
             <col className="w-[8%]" /> {/* first */}
             <col className="w-[8%]" /> {/* last */}
-            <col className="w-[5%]" /> {/* mid */}
+            <col className="w-[7%]" /> {/* mid */}
             <col className="w-[20%]" /> {/* address */}
-            <col className="w-[8%]" /> {/* city */}
+            <col className="w-[10%]" /> {/* city */}
             <col className="w-[4%]" /> {/* st */}
             <col className="w-[7%]" /> {/* zip */}
             <col className="w-[9%]" /> {/* phone */}
@@ -265,7 +269,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
           {/* Header */}
           <thead>
             <tr className="bg-[#020617]">
-              <th className="px-2 py-2 border-b border-r border-slate-700">
+              <th className="px-2 py-2 text-center border-b border-r border-slate-700">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -279,7 +283,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
               {columns.map((col, i) => (
                 <th
                   key={col}
-                  className={`px-2 py-2 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-700 ${
+                  className={`px-2 py-2 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-b border-slate-700 ${
                     i < columns.length - 1 ? "border-r border-slate-700" : ""
                   }`}
                 >
@@ -352,6 +356,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
                     cellKey={`${rowKey}-address`}
                     isCopied={isCopied(`${rowKey}-address`)}
                     onCopy={copy}
+                    center
                     className={borderB}
                   />
 
