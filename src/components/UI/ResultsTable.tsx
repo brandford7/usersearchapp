@@ -247,9 +247,8 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
 
       {/* Table */}
       <div className="rounded-lg border border-slate-800 bg-[#0f172a] shadow-xl">
-        <div className="overflow-x-auto">
         <table
-          className="table-auto"
+          className="w-full table-auto"
           style={{ borderCollapse: "separate", borderSpacing: 0 }}
         >
           {/* Header */}
@@ -408,7 +407,6 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             })}
           </tbody>
         </table>
-        </div>
 
         {/* Footer */}
         <div className="bg-[#020617] px-4 py-2 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between">
