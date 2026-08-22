@@ -255,7 +255,7 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
             <col className="w-[14%]" /> {/* address */}
             <col className="w-[14%]" /> {/* city */}
             <col className="w-[4%]" /> {/* st */}
-            <col className="w-[4%]" /> {/* zip */}
+            <col className="w-[7%]" /> {/* zip */}
             <col className="w-[9%]" /> {/* phone */}
             <col className="w-[8%]" /> {/* dob */}
             <col className="w-[10%]" /> {/* ssn */}
