@@ -102,7 +102,7 @@ export default function SearchForm({
             label="State"
             value={inputs.state || ""}
             onChange={(v) => handleChange("state", v.toUpperCase())}
-            placeholder="CA"
+            placeholder="state"
           />
           <InputField
             label="ZIP"
