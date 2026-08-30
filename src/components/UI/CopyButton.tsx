@@ -20,6 +20,26 @@ const formatDob = (dob: string | null | undefined): string => {
   return dob;
 };
 
+const CSV_HEADERS = [
+  "First Name",
+  "Last Name",
+  "Middle Name",
+  "Address",
+  "City",
+  "State",
+  "ZIP",
+  "Phone",
+  "DOB",
+  "SSN",
+];
+
+const csvEscape = (value: string): string => {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+};
+
 export const CopyButton = ({ data }: CopyButtonProps) => {
   const [copied, setCopied] = useState(false);
 
@@ -37,7 +57,9 @@ export const CopyButton = ({ data }: CopyButtonProps) => {
       data.ssn || "",
     ];
 
-    const text = `| ${fields.join(" | ")} |`;
+    const text = [CSV_HEADERS.join(","), fields.map(csvEscape).join(",")].join(
+      "\r\n"
+    );
 
     try {
       await navigator.clipboard.writeText(text);

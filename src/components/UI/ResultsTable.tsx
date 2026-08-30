@@ -24,7 +24,27 @@ const formatDob = (dob: string | null | undefined): string => {
   return dob;
 };
 
-const formatPersonForCopy = (person: Person): string => {
+const CSV_HEADERS = [
+  "First Name",
+  "Last Name",
+  "Middle Name",
+  "Address",
+  "City",
+  "State",
+  "ZIP",
+  "Phone",
+  "DOB",
+  "SSN",
+];
+
+const csvEscape = (value: string): string => {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+};
+
+const formatPersonAsCsvRow = (person: Person): string => {
   const fields = [
     person.firstname || "",
     person.lastname || "",
@@ -37,7 +57,12 @@ const formatPersonForCopy = (person: Person): string => {
     formatDob(person.dob),
     person.ssn || "",
   ];
-  return `| ${fields.join(" | ")} |`;
+  return fields.map(csvEscape).join(",");
+};
+
+const formatPeopleAsCsv = (people: Person[]): string => {
+  const rows = people.map(formatPersonAsCsvRow);
+  return [CSV_HEADERS.join(","), ...rows].join("\r\n");
 };
 
 const useCellCopy = () => {
@@ -149,8 +174,8 @@ export default function ResultsTable({ data, isLoading }: ResultsTableProps) {
   const copySelectedRows = () => {
     if (!data || selectedIds.size === 0) return;
     const selected = data.filter((p) => selectedIds.has(p.id));
-    const rows = selected.map(formatPersonForCopy).join("\n");
-    navigator.clipboard.writeText(rows);
+    const csv = formatPeopleAsCsv(selected);
+    navigator.clipboard.writeText(csv);
     setCopiedRows(true);
     setTimeout(() => setCopiedRows(false), 2000);
   };
