@@ -169,6 +169,7 @@ export default function PeopleSearch() {
             currentPage={page}
             totalItems={data?.total ?? 0}
             totalPages={data?.totalPages ?? null}
+            totalCapped={data?.totalCapped ?? false}
             hasMore={data?.hasMore ?? false}
             hasPrevious={data?.hasPrevious ?? false}
             isLoading={isLoading}

@@ -4,6 +4,9 @@ interface PaginationProps {
   currentPage: number;
   totalItems: number;
   totalPages: number | null; // null only while the very first request is loading
+  // true when totalItems/totalPages hit the backend's count cap — the real
+  // total is at least this many, possibly far more. Render both as "N+".
+  totalCapped: boolean;
   hasMore: boolean;
   hasPrevious: boolean;
   isLoading: boolean;
@@ -42,23 +45,30 @@ export default function Pagination({
   currentPage,
   totalItems,
   totalPages,
+  totalCapped,
   hasMore,
   hasPrevious,
   isLoading,
   onPageChange,
 }: PaginationProps) {
   const pageNumbers = totalPages ? getPageNumbers(currentPage, totalPages) : [];
+  const plus = totalCapped ? "+" : "";
 
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <div className="flex flex-col">
         <span className="text-sm text-gray-400">
-          {isLoading ? "Searching..." : `Showing ${totalItems} results`}
+          {isLoading ? "Searching..." : `Showing ${totalItems}${plus} results`}
         </span>
         <span className="text-xs text-gray-500">
           Page {currentPage}
-          {totalPages != null ? ` of ${totalPages}` : ""}
+          {totalPages != null ? ` of ${totalPages}${plus}` : ""}
         </span>
+        {totalCapped && (
+          <span className="text-xs text-amber-500 mt-0.5">
+            Narrow your search for more precise results
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-1">

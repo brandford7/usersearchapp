@@ -19,6 +19,9 @@ export interface ApiResponse {
   // cache the value from the first page instead of expecting it on every response.
   totalPages: number | null;
   total: number | null;
+  // true when `total` hit the backend's count cap — the real total is at
+  // least this many, possibly far more. Render `total` as "N+" when true.
+  totalCapped: boolean;
   limit: number;
   nextCursor: string | null;
   prevCursor: string | null;
