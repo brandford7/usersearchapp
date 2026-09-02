@@ -173,6 +173,7 @@ export default function PeopleSearch() {
             hasMore={data?.hasMore ?? false}
             hasPrevious={data?.hasPrevious ?? false}
             isLoading={isLoading}
+            pageSize={data?.limit ?? 100}
             onPageChange={handlePageChange}
           />
           <ResultsTable data={data?.data ?? []} isLoading={isLoading} />
