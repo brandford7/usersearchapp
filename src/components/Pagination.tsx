@@ -79,8 +79,16 @@ export default function Pagination({
   const showJump = totalPages != null && totalPages > 7;
 
   const goTo = (page: number) => {
-    if (!totalPages) return;
-    const clamped = Math.min(Math.max(page, 1), totalPages);
+    const lowerBounded = Math.max(page, 1);
+    // Only clamp to totalPages when it's an exact total. When totalCapped,
+    // totalPages is just where the count query stopped counting (see
+    // people.service.ts's COUNT_CAP) — the real last page is unknown, so
+    // don't block navigation past it; hasMore (from the real data fetch)
+    // is what actually gates whether a further page exists.
+    const clamped =
+      totalPages != null && !totalCapped
+        ? Math.min(lowerBounded, totalPages)
+        : lowerBounded;
     if (clamped !== currentPage) onPageChange(clamped);
   };
 
@@ -213,7 +221,14 @@ export default function Pagination({
           <button
             type="button"
             onClick={() => totalPages && goTo(totalPages)}
-            disabled={!hasMore || isLoading || totalPages == null}
+            disabled={
+              !hasMore ||
+              isLoading ||
+              totalPages == null ||
+              // Once past a capped total, "last known page" is behind us —
+              // jumping there would move backward, not forward.
+              (totalCapped && currentPage >= totalPages)
+            }
             className={iconButton}
             aria-label="Last page"
             title={totalCapped ? "Last known page" : "Last page"}
@@ -232,13 +247,17 @@ export default function Pagination({
               type="number"
               inputMode="numeric"
               min={1}
-              max={totalPages ?? undefined}
+              max={totalCapped ? undefined : (totalPages ?? undefined)}
               value={jumpValue}
               onChange={(e) => setJumpValue(e.target.value)}
               placeholder={String(currentPage)}
               disabled={isLoading}
               className="w-16 h-8 px-2 rounded bg-gray-800 border border-gray-700 text-sm text-gray-200 text-center focus:outline-none focus:border-indigo-500 disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              aria-label={`Go to page, 1 to ${totalPages}`}
+              aria-label={
+                totalCapped
+                  ? `Go to page, starting from 1`
+                  : `Go to page, 1 to ${totalPages}`
+              }
             />
             <button
               type="submit"
